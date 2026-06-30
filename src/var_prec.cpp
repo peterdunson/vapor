@@ -57,7 +57,7 @@ void _rgig_ROU_shift_alt(double *res, int n, double lambda, double lambda_old,
                          double omega, double alpha) {
    double xm, nc, s, t, U, V, X;
    double a, b, c, p, q, fi, fak, y1, y2, uplus, uminus;
-   int i, count = 0;
+   int i;
    t  = 0.5  * (lambda - 1.);
    s  = 0.25 * omega;
    xm = _gig_mode(lambda, omega);
@@ -75,7 +75,6 @@ void _rgig_ROU_shift_alt(double *res, int n, double lambda, double lambda_old,
    uminus = (y2-xm) * exp(t*log(y2) - s*(y2+1./y2) - nc);
    for (i = 0; i < n; i++) {
       do {
-         ++count;
          U = uminus + unif_rand() * (uplus - uminus);
          V = unif_rand();
          X = U/V + xm;
@@ -87,7 +86,7 @@ void _rgig_ROU_shift_alt(double *res, int n, double lambda, double lambda_old,
 void _rgig_ROU_noshift(double *res, int n, double lambda, double lambda_old,
                        double omega, double alpha) {
    double xm, nc, ym, um, s, t, U, V, X;
-   int i, count = 0;
+   int i;
    t  = 0.5  * (lambda - 1.);
    s  = 0.25 * omega;
    xm = _gig_mode(lambda, omega);
@@ -96,7 +95,6 @@ void _rgig_ROU_noshift(double *res, int n, double lambda, double lambda_old,
    um = exp(0.5*(lambda+1.)*log(ym) - s*(ym+1./ym) - nc);
    for (i = 0; i < n; i++) {
       do {
-         ++count;
          U = um * unif_rand();
          V = unif_rand();
          X = U/V;
@@ -108,7 +106,7 @@ void _rgig_ROU_noshift(double *res, int n, double lambda, double lambda_old,
 void _rgig_newapproach1(double *res, int n, double lambda, double lambda_old,
                         double omega, double alpha) {
    double A[3], Atot, k0, k1, k2, xm, x0, a, U, V, X, hx;
-   int i, count = 0;
+   int i;
    if (lambda >= 1. || omega > 1.) Rcpp::stop("invalid parameters");
    xm = _gig_mode(lambda, omega);
    x0 = omega / (1. - lambda);
@@ -129,7 +127,6 @@ void _rgig_newapproach1(double *res, int n, double lambda, double lambda_old,
    Atot = A[0] + A[1] + A[2];
    for (i = 0; i < n; i++) {
       do {
-         ++count;
          V = Atot * unif_rand();
          do {
             if (V <= A[0]) { X = x0*V/A[0]; hx = k0; break; }
