@@ -1,13 +1,8 @@
 #include <RcppArmadillo.h>
-#include <RcppGSL.h>
 #include <sstream>
 #include <iostream>
-#include <omp.h>
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_sf.h>
-#include <gsl/gsl_cdf.h>
+#include <cmath>
+#include <cfloat>
 
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
@@ -15,8 +10,6 @@
 
 // [[Rcpp::plugins(cpp17)]]
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::depends(RcppGSL)]]
-// [[Rcpp::plugins(openmp)]]
 
 using namespace arma;
 
@@ -25,6 +18,29 @@ using namespace arma;
 #define ZTOL        (DBL_EPSILON * 10.0)
 #define crossprod(x)  symmatu((x).t() * (x))
 #define tcrossprod(x) symmatu((x) * (x).t())
+
+// ── GSL replacements (drop external GSL dependency) ──────────────────────────
+#ifndef GSL_MAX_DBL
+#define GSL_MAX_DBL(a, b) (std::max((double)(a), (double)(b)))
+#endif
+#ifndef GSL_MIN_INT
+#define GSL_MIN_INT(a, b) (std::min((int)(a), (int)(b)))
+#endif
+
+static inline double gsl_pow_2(double x) { return x * x; }
+
+// log Pochhammer: log Gamma(a + x) - log Gamma(a)
+static inline double gsl_sf_lnpoch(double a, double x) {
+   return std::lgamma(a + x) - std::lgamma(a);
+}
+
+// fuzzy comparison: returns 0 if |a-b| within eps*|.|, else +/-1 (sign of a-b)
+static inline int gsl_fcmp(double a, double b, double eps) {
+   double diff = a - b;
+   double m = std::max(std::fabs(a), std::fabs(b));
+   if (std::fabs(diff) <= eps * m) return 0;
+   return (diff > 0) ? 1 : -1;
+}
 
 // ============================================================================
 //  GIG SAMPLER (lifted from gg_model_sub.cpp)
@@ -399,7 +415,7 @@ Rcpp::List var_precision_sampler(
    // ── Main Gibbs loop ───────────────────────────────────────────────────────
    for (int i = 0; i < nrun; ++i) {
       
-      if (Progress::check_abort()) { delete[] inds_eq_j; return -1.0; }
+      if (Progress::check_abort()) { delete[] inds_eq_j; return R_NilValue; }
       prog.increment();
       
       // ── BLOCK 1: Sample B | Y, Omega ─────────────────────────────────────

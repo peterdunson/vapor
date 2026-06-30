@@ -1,0 +1,12 @@
+Package: VAPOR
+Type: Package
+Title: Vector Autoregressive Precision factOR Models
+Version: 0.1.0
+Authors@R: person("Peter", "Dunson", email = "peteradunsonn@gmail.com", role = c("aut", "cre"))
+Description: Joint Bayesian estimation of vector autoregression dynamics and a sparse innovation precision matrix. The VAR coefficients receive a Dirichlet-Laplace prior and the innovation precision matrix is modeled as a low-rank plus diagonal factor decomposition with a Dirichlet-Laplace prior on the loadings and a Dirichlet process prior on the idiosyncratic variances. A single Gibbs sampler updates both jointly.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.0.0)
+Imports: Rcpp, stats
+LinkingTo: Rcpp, RcppArmadillo, RcppProgress
+RoxygenNote: 7.3.3
