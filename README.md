@@ -74,9 +74,11 @@ VAR residuals, and update the Dirichlet process concentration.
 
 ## References
 
-- Chandra, Dunson, and others (2026). Precision Factor Analysis.
-- Kastner and Huber (2020). Sparse Bayesian vector autoregressions in huge
-  dimensions. *Journal of Forecasting*.
+- Chandra, N. K., Müller, P., and Sarkar, A. (2026). Bayesian Scalable
+  Precision Factor Analysis for Gaussian Graphical Models. *Bayesian Analysis*,
+  21(1), 75-103.
+- Kastner, G. and Huber, F. (2020). Sparse Bayesian vector autoregressions in
+  huge dimensions. *Journal of Forecasting*, 39(7), 1142-1165.
 
 ## License
 
