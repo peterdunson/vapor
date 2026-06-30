@@ -41,6 +41,25 @@ fit$Omega                  # posterior mean precision matrix
 partial_correlations(fit)  # partial correlation matrix
 ```
 
+### Selecting a sparse graph
+
+`select_graph()` thresholds the precision matrix into a conditional independence
+graph using posterior false discovery rate (pFDR) control. It returns a 0/1
+adjacency matrix of selected edges.
+
+```r
+sel <- select_graph(fit, alpha = 0.1, beta = 0.85)
+
+sum(sel$P) / 2   # number of edges
+sel$P            # adjacency matrix
+sel$pFDR         # realized false discovery rate
+```
+
+For each pair of variables, the procedure asks how often across the posterior
+draws the absolute partial correlation exceeds a magnitude threshold. Pairs
+exceeding the probability cutoff `beta` are declared edges, subject to keeping
+the expected proportion of false edges below `alpha`.
+
 ## Model
 
 For a VAR(1):
@@ -48,7 +67,7 @@ For a VAR(1):
 - y_t = B y_{t-1} + e_t,  e_t ~ N(0, Omega^{-1})
 - Omega = Lambda Lambda^T + Delta  (low-rank plus diagonal)
 - Dirichlet-Laplace prior on the rows of B (Kastner and Huber, 2020)
-- Dirichlet-Laplace prior on the loadings Lambda (Chandra and others, 2026)
+- Dirichlet-Laplace prior on the loadings Lambda (Chandra, Müller, and Sarkar, 2026)
 - Dirichlet process prior on the diagonal Delta
 
 The sampler iterates three blocks: sample B given Omega, sample Omega given the
@@ -57,6 +76,7 @@ VAR residuals, and update the Dirichlet process concentration.
 ## Main functions
 
 - `vapor()` fits the model and returns a `"vapor"` object.
+- `select_graph()` performs pFDR edge selection on a fit.
 - `partial_correlations()` returns the partial correlation matrix from a fit.
 - `posterior_mean_omega()` builds the posterior mean precision matrix from
   stored draws.
