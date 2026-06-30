@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 var_precision_sampler <- function(Y, lags = 1L, k = 5L, nrun = 5000L, burn = 2500L, thin = 5L, a_L = 0.5, b_L = 0.5, a_B = 0.5, b_B = 0.5, as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1) {
-    .Call('_VAPOR_var_precision_sampler', PACKAGE = 'VAPOR', Y, lags, k, nrun, burn, thin, a_L, b_L, a_B, b_B, as, bs, a_dir, b_dir)
+    .Call(`_VAPOR_var_precision_sampler`, Y, lags, k, nrun, burn, thin, a_L, b_L, a_B, b_B, as, bs, a_dir, b_dir)
 }
 
