@@ -8,12 +8,22 @@ vapor(
   Y,
   lags = 1,
   k = 5,
+  rank = "full",
   nrun = 5000,
   burn = floor(nrun/2),
   thin = 5,
   a_L = 0.5,
   b_L = 0.5,
+  a_B = 0.5,
   b_B = 0.5,
+  prior_B = c("dl", "ridge", "mgps"),
+  s_U2 = 1,
+  s_V2 = 1,
+  mgp_nu = 3,
+  mgp_a1 = 2.1,
+  mgp_b1 = 1,
+  mgp_a2 = 3.1,
+  mgp_b2 = 1,
   as = 0.1,
   bs = 0.1,
   a_dir = 0.1,
@@ -29,11 +39,34 @@ vapor(
 
 \item{k}{Integer number of precision factors.}
 
+\item{rank}{Rank of the VAR coefficient matrix B. `"full"` (default) uses
+the original full-rank sampler with a Dirichlet-Laplace prior on B. An
+integer `r <= min(p, lags*p)` uses a reduced-rank parameterization
+B = U V^T, with `prior_B` controlling the prior on V.}
+
 \item{nrun, burn, thin}{MCMC controls.}
 
-\item{a_L, b_L}{Dirichlet-Laplace shape/rate for the loadings.}
+\item{a_L, b_L}{Dirichlet-Laplace shape/rate for the precision loadings.}
 
-\item{b_B}{Dirichlet-Laplace rate for the VAR coefficients.}
+\item{a_B, b_B}{Dirichlet-Laplace shape/rate for the VAR coefficients
+(full B when rank = "full", or V when rank is numeric and
+prior_B = "dl").}
+
+\item{prior_B}{Prior on the reduced-rank factor V. Ignored when
+rank = "full" (always Dirichlet-Laplace on the full B). `"dl"`
+(default) uses Dirichlet-Laplace shrinkage on V; `"ridge"` uses a
+constant-variance Gaussian prior; `"mgps"` uses a Multiplicative
+Gamma Process shrinkage prior across V's columns, so shrinkage
+increases with column index -- intended for use with a generous
+rank ceiling, letting effective rank emerge from the posterior.}
+
+\item{s_U2, s_V2}{Ridge prior variances for U and V. Only used when rank
+is numeric; s_V2 only applies when prior_B = "ridge".}
+
+\item{mgp_nu, mgp_a1, mgp_b1, mgp_a2, mgp_b2}{MGPS hyperparameters (only used
+when prior_B = "mgps"): local-precision shape, first-column shape/rate,
+and later-column shape/rate (mgp_a2/mgp_b2 give increasing shrinkage
+for columns beyond the first). Defaults follow Durante (2017).}
 
 \item{as, bs}{Dirichlet process base-measure shape/rate.}
 

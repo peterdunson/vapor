@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <cfloat>
+#include <string>
 
 // [[Rcpp::depends(RcppProgress)]]
 #include <progress.hpp>
@@ -16,10 +17,7 @@ using namespace arma;
 // ── Tolerances and macros ────────────────────────────────────────────────────
 #define tolr        1e-5
 #define ZTOL        (DBL_EPSILON * 10.0)
-#define crossprod(x)  symmatu((x).t() * (x))
-#define tcrossprod(x) symmatu((x) * (x).t())
 
-// ── GSL replacements (drop external GSL dependency) ──────────────────────────
 #ifndef GSL_MAX_DBL
 #define GSL_MAX_DBL(a, b) (std::max((double)(a), (double)(b)))
 #endif
@@ -29,12 +27,10 @@ using namespace arma;
 
 static inline double gsl_pow_2(double x) { return x * x; }
 
-// log Pochhammer: log Gamma(a + x) - log Gamma(a)
 static inline double gsl_sf_lnpoch(double a, double x) {
    return std::lgamma(a + x) - std::lgamma(a);
 }
 
-// fuzzy comparison: returns 0 if |a-b| within eps*|.|, else +/-1 (sign of a-b)
 static inline int gsl_fcmp(double a, double b, double eps) {
    double diff = a - b;
    double m = std::max(std::fabs(a), std::fabs(b));
@@ -43,7 +39,7 @@ static inline int gsl_fcmp(double a, double b, double eps) {
 }
 
 // ============================================================================
-//  GIG SAMPLER (lifted from gg_model_sub.cpp)
+//  GIG SAMPLER
 // ============================================================================
 
 double _gig_mode(double lambda, double omega) {
@@ -185,7 +181,6 @@ double rgig(double lambda, double chi, double psi) {
    return ret;
 }
 
-// ── Inverse-Gaussian sampler ─────────────────────────────────────────────────
 double rig(double mu) {
    double y   = randn<double>(); y *= y;
    double mu2 = gsl_pow_2(mu);
@@ -197,24 +192,21 @@ double rig(double mu) {
    return (u <= -log1p(x_div_mu)) ? x : mu/x_div_mu;
 }
 
-// ── Log-marginal PDF for DP residual variance update ─────────────────────────
 inline double log_marginal_pdf(unsigned n, double as, double bs, double vnorm) {
    return gsl_sf_lnpoch(as, ((double)n)/2.)
    + as*log(bs)
    - (as + ((double)n)/2.) * log(bs + vnorm/2.);
 }
 
-// ── Log-sum-exp ──────────────────────────────────────────────────────────────
 double log_sum_exp(const arma::vec &x) {
    double mx = x.max();
    return log(sum(exp(x - mx))) + mx;
 }
 
 // ============================================================================
-//  BLOCK 2 HELPERS  (Omega update — from gg_model_sub.cpp)
+//  OMEGA BLOCK HELPERS (shared by both samplers, unchanged)
 // ============================================================================
 
-// Update loading params: psi_inv, T_phi, Plam
 void update_loading_params(arma::mat &Lambda, arma::mat &T_phi,
                            arma::mat &Plam, const double a, const double b) {
    arma::mat abs_theta = abs(Lambda);
@@ -233,7 +225,6 @@ void update_loading_params(arma::mat &Lambda, arma::mat &T_phi,
    if (Plam.has_nan()) Rcpp::stop("Plam has nan in update_loading_params");
 }
 
-// Update loadings Lambda (the precision factor loadings, NOT the VAR B)
 void update_phi(arma::mat &phimat, const arma::mat &Plam,
                 const arma::mat &u,  const arma::mat &v,
                 const arma::vec &ssqv) {
@@ -250,12 +241,13 @@ void update_phi(arma::mat &phimat, const arma::mat &Plam,
 }
 
 // ============================================================================
-//  BLOCK 1 HELPER  (B update — adapted from bayesianVARs sample_PHI_factor)
+//  B-BLOCK HELPERS -- shared, generic over matrix shape
+//
+//  update_B_params operates purely on B.n_rows/B.n_cols, so it is reused
+//  UNCHANGED for the reduced-rank V matrix (Kx x r) by just calling it with
+//  V instead of B. Same for full-rank B (p x Kx). No new shrinkage math.
 // ============================================================================
 
-// Fast equation-by-equation sampler for B under DL prior
-// Y_res = Y - X*B (current residuals for Omega block)
-// We sample B | Y, Omega using GLS transformation
 void sample_B(arma::mat &B, const arma::mat &Y, const arma::mat &X,
               const arma::mat &Plam_B, const arma::vec &ps,
               const bool huge = false) {
@@ -264,15 +256,13 @@ void sample_B(arma::mat &B, const arma::mat &Y, const arma::mat &X,
    const int T = Y.n_rows;
    
    for (int j = 0; j < p; ++j) {
-      // scale by residual precision
       double sigma_j = 1.0 / sqrt(ps(j));
       arma::vec y_norm = Y.col(j) * sigma_j;
       arma::mat X_norm = X * sigma_j;
       
-      arma::vec prior_var = Plam_B.row(j).t();  // K-dim prior variance for B[j,]
+      arma::vec prior_var = Plam_B.row(j).t();
       
       if (huge) {
-         // Bhattacharya et al. (2016) fast sampler: O(KT) instead of O(K^3)
          arma::vec u(K); u.imbue(R::norm_rand);
          u %= sqrt(prior_var);
          arma::vec delta(T); delta.imbue(R::norm_rand);
@@ -281,7 +271,6 @@ void sample_B(arma::mat &B, const arma::mat &Y, const arma::mat &X,
          arma::vec w   = arma::solve(XPV*X_norm.t() + arma::eye(T,T), y_norm - v_vec);
          B.row(j)      = (u + XPV.t()*w).t();
       } else {
-         // standard posterior
          arma::mat Omega_post = X_norm.t() * X_norm;
          Omega_post.diag() += 1. / prior_var;
          arma::mat chol_op   = chol(Omega_post, "upper");
@@ -293,6 +282,9 @@ void sample_B(arma::mat &B, const arma::mat &Y, const arma::mat &X,
    }
 }
 
+// Generic DL-hyperparameter update. Works on ANY matrix shape: called with
+// full B (p x Kx) for the full-rank sampler, and with V (Kx x r) for the
+// reduced-rank sampler's DL option. No modification needed either way.
 void update_B_params(arma::mat &B, arma::mat &T_phi_B,
                      arma::mat &Plam_B, arma::vec &tau_B,
                      const double a_B, const double b_B) {
@@ -307,13 +299,11 @@ void update_B_params(arma::mat &B, arma::mat &T_phi_B,
       arma::rowvec psi_j(Kx);
       
       for (unsigned h = 0; h < Kx; ++h) {
-         // sample lambda (local scale)
          double lam = rgig(a_B - 0.5,
                            coefs_sq(h) / GSL_MAX_DBL(lambda_j(h), 1e-10),
                            2.0 * xi_j);
          lambda_j(h) = GSL_MAX_DBL(lam, 9e-6);
          
-         // sample psi (auxiliary)
          double ps = rgig(0.5,
                           coefs_sq(h) / GSL_MAX_DBL(lambda_j(h)*lambda_j(h), 1e-20),
                           1.0);
@@ -322,13 +312,128 @@ void update_B_params(arma::mat &B, arma::mat &T_phi_B,
       
       // xi fixed (DL_plus=FALSE), no update needed
       T_phi_B.row(j) = lambda_j;
-      
-      // prior variance = psi * lambda^2
       Plam_B.row(j) = psi_j % square(lambda_j);
    }
 }
+
 // ============================================================================
-//  DP RESIDUAL VARIANCE UPDATE  (from gg_model_sub.cpp prec_est)
+//  REDUCED-RANK B = U V^T HELPERS
+//
+//  U : p  x r   (ridge prior only, s_U2)
+//  V : Kx x r   (ridge OR DL prior, selected by prior_B string)
+// ============================================================================
+
+// Sample U | V, Y, ps. Row-by-row r-dim Gaussian regression on Z = X V.
+void sample_U(arma::mat &U, const arma::mat &Ymat, const arma::mat &Z,
+              const arma::vec &ps, const double s_U2) {
+   const unsigned p = Ymat.n_cols;
+   const unsigned r = Z.n_cols;
+   arma::mat ZtZ = symmatu(Z.t() * Z);
+   arma::mat ZtY = Z.t() * Ymat;
+   for (unsigned j = 0; j < p; ++j) {
+      arma::mat M = ps(j) * ZtZ;
+      M.diag()   += 1.0 / s_U2;
+      arma::mat Rchol = chol(symmatu(M));
+      arma::vec rhs   = ps(j) * ZtY.col(j);
+      arma::vec mu    = solve(trimatu(Rchol),
+                              solve(trimatl(Rchol.t()), rhs));
+      arma::vec z(r); z.imbue(R::norm_rand);
+      U.row(j) = (mu + solve(trimatu(Rchol), z)).t();
+   }
+}
+
+// Sample V | U, Y, ps. Joint (Kx*r)-dim Gaussian via the Kronecker form of
+// the posterior precision. PriorVarV (Kx x r) supplies the per-entry prior
+// variance: constant matrix for ridge, or Plam_V (DL local*global scales)
+// for the DL option. Same function serves both priors.
+void sample_V(arma::mat &V, const arma::mat &U, const arma::mat &Ymat,
+              const arma::mat &X, const arma::mat &XtX,
+              const arma::vec &ps, const arma::mat &PriorVarV) {
+   const unsigned Kx = X.n_cols;
+   const unsigned r  = U.n_cols;
+   
+   arma::mat Ud   = U.each_col() % ps;
+   arma::mat UtDU = symmatu(U.t() * Ud);
+   
+   arma::mat P = kron(UtDU, XtX);
+   P.diag()   += 1.0 / vectorise(PriorVarV);
+   
+   arma::mat XtY   = X.t() * Ymat;
+   arma::mat XtYD  = XtY.each_row() % ps.t();
+   arma::mat b_mat = XtYD * U;
+   arma::vec b_vec = vectorise(b_mat);
+   
+   arma::mat Rchol = chol(symmatu(P));
+   arma::vec mu    = solve(trimatu(Rchol),
+                           solve(trimatl(Rchol.t()), b_vec));
+   arma::vec z(Kx*r); z.imbue(R::norm_rand);
+   arma::vec vsol  = mu + solve(trimatu(Rchol), z);
+   
+   V = reshape(vsol, Kx, r);
+}
+
+// ============================================================================
+//  MULTIPLICATIVE GAMMA PROCESS (MGPS) SHRINKAGE ON V's COLUMNS
+//  (Bhattacharya & Dunson 2011). Column h's entries share local precisions
+//  phi_jh ~ Gamma(nu/2, nu/2) and a cumulative global scale
+//  tau_h = prod_{l<=h} delta_l, with delta_1 ~ Gamma(a1,1),
+//  delta_h ~ Gamma(a2,1) for h>1, a2>1 so tau_h grows with h and later
+//  columns are pushed toward zero. Returns the Kx x r prior-variance matrix
+//  (1/(phi_jh*tau_h)) to feed into the same sample_V() used for ridge/dl.
+// ============================================================================
+
+struct MGPState {
+   arma::mat Phi;    // Kx x r local precisions
+   arma::vec delta;  // r     column multipliers
+   arma::vec tau;    // r     cumulative products of delta
+   double nu, a1, b1, a2, b2;
+};
+
+MGPState init_mgp(unsigned Kx, unsigned r, double nu, double a1, double b1,
+                  double a2, double b2) {
+   MGPState st;
+   st.Phi   = randg<arma::mat>(Kx, r, distr_param(nu/2.0, 2.0/nu));
+   st.delta = randg<arma::vec>(r,     distr_param(a1, 1.0/b1));
+   for (unsigned h = 1; h < r; ++h)
+      st.delta(h) = R::rgamma(a2, 1.0/b2);
+   st.tau   = cumprod(st.delta);
+   st.nu = nu; st.a1 = a1; st.b1 = b1; st.a2 = a2; st.b2 = b2;
+   return st;
+}
+
+arma::mat mgp_prior_var(const MGPState &st) {
+   arma::mat tau_row = arma::repmat(st.tau.t(), st.Phi.n_rows, 1);
+   return 1.0 / (st.Phi % tau_row);
+}
+
+void update_mgp(MGPState &st, const arma::mat &V) {
+   const unsigned Kx = V.n_rows, r = V.n_cols;
+   arma::mat Vsq = square(V);
+   
+   // local precisions phi_jh | V, tau
+   arma::mat tau_row = arma::repmat(st.tau.t(), Kx, 1);
+   arma::mat shape_m(Kx, r, fill::value(st.nu/2.0 + 0.5));
+   arma::mat rate_m  = st.nu/2.0 + 0.5 * (tau_row % Vsq);
+   for (unsigned j = 0; j < Kx; ++j)
+      for (unsigned h = 0; h < r; ++h)
+         st.Phi(j,h) = GSL_MAX_DBL(randg(distr_param(shape_m(j,h), 1.0/rate_m(j,h))), 1e-8);
+   
+   // column sums S_h = sum_j phi_jh * V_jh^2
+   arma::rowvec S = sum(st.Phi % Vsq, 0);
+   
+   // sequential update of delta_1..delta_r
+   for (unsigned m = 0; m < r; ++m) {
+      double shape = (m == 0 ? st.a1 : st.a2) + 0.5 * (double)Kx * (double)(r - m);
+      double rate  = (m == 0 ? st.b1 : st.b2);
+      for (unsigned l = m; l < r; ++l)
+         rate += 0.5 * (st.tau(l) / st.delta(m)) * S(l);
+      st.delta(m) = GSL_MAX_DBL(randg(distr_param(shape, 1.0/rate)), 1e-8);
+      st.tau = cumprod(st.delta);
+   }
+}
+
+// ============================================================================
+//  DP RESIDUAL VARIANCE UPDATE (shared, unchanged)
 // ============================================================================
 
 double update_dir_prec(double alpha, double a, double b, unsigned n, unsigned k) {
@@ -341,36 +446,32 @@ double update_dir_prec(double alpha, double a, double b, unsigned n, unsigned k)
 }
 
 // ============================================================================
-//  MAIN SAMPLER
+//  FULL-RANK SAMPLER (original, unchanged)
 // ============================================================================
 
 // [[Rcpp::export]]
 Rcpp::List var_precision_sampler(
-      const arma::mat &Y,       // T x p data matrix
-      const int lags    = 1,    // VAR lag order
-      const int k       = 5,    // number of precision factors
-      const int nrun    = 5000, // total MCMC iterations
-      const int burn    = 2500, // burn-in (stored but flagged)
-      const int thin    = 5,    // thinning interval
-      const double a_L  = 0.5,  // DL shape for Lambda (precision loadings)
-      const double b_L  = 0.5,  // DL rate  for Lambda
-      const double a_B  = 0.5,  // DL shape for B (VAR coefficients)
-      const double b_B  = 0.5,  // DL rate  for B
-      const double as   = 0.1,  // DP base measure shape
-      const double bs   = 0.1,  // DP base measure rate
-      const double a_dir= 0.1,  // DP concentration prior shape
-      const double b_dir= 0.1   // DP concentration prior rate
+      const arma::mat &Y,
+      const int lags    = 1,
+      const int k       = 5,
+      const int nrun    = 5000,
+      const int burn    = 2500,
+      const int thin    = 5,
+      const double a_L  = 0.5,
+      const double b_L  = 0.5,
+      const double a_B  = 0.5,
+      const double b_B  = 0.5,
+      const double as   = 0.1,
+      const double bs   = 0.1,
+      const double a_dir= 0.1,
+      const double b_dir= 0.1
 ) {
-   // ── Dimensions ───────────────────────────────────────────────────────────
    const unsigned T = Y.n_rows;
    const unsigned p = Y.n_cols;
-   const unsigned Teff = T - lags;          // effective sample size
-   const unsigned Kx   = lags * p;          // number of predictors per equation
-   const double a_B_eff = 1.0 / (double)(p * Kx);  // DL shape for B: 1/K following Kastner & Huber
+   const unsigned Teff = T - lags;
+   const unsigned Kx   = lags * p;
+   const double a_B_eff = 1.0 / (double)(p * Kx);
    
-   // ── Build lagged data matrices ────────────────────────────────────────────
-   // X: Teff x Kx   (lagged predictors)
-   // Ymat: Teff x p  (responses)
    arma::mat Ymat(Teff, p), X(Teff, Kx);
    for (unsigned t = 0; t < Teff; ++t) {
       Ymat.row(t) = Y.row(t + lags);
@@ -378,19 +479,16 @@ Rcpp::List var_precision_sampler(
          X.row(t).subvec(lag*p, (lag+1)*p - 1) = Y.row(t + lags - 1 - lag);
    }
    
-   // ── Initialise B ─────────────────────────────────────────────────────────
    arma::mat B(p, Kx, fill::zeros);
-   arma::mat T_phi_B(p, Kx, fill::value(1.0/Kx));   // lambda init to 1/K
-   arma::mat Plam_B(p, Kx, fill::value(1.0/Kx));    // V_i = psi*lambda^2 ~ 1/K initially
-   arma::vec tau_B(p, fill::value(0.5));             // xi init to 0.5
+   arma::mat T_phi_B(p, Kx, fill::value(1.0/Kx));
+   arma::mat Plam_B(p, Kx, fill::value(1.0/Kx));
+   arma::vec tau_B(p, fill::value(0.5));
    
-   // ── Initialise Lambda (precision factor loadings) ─────────────────────────
-   arma::mat phimat(p, k, fill::randn);     // p x k loadings for Omega
+   arma::mat phimat(p, k, fill::randn);
    arma::mat T_phi  = randg<arma::mat>(p, k, distr_param(a_L, 0.5));
    T_phi.transform([](double v){ return GSL_MAX_DBL(v, 9e-17); });
    arma::mat Plam   = 1. / (1. + square(T_phi));
    
-   // ── Initialise DP residual variances ─────────────────────────────────────
    const unsigned nmix = p;
    double dir_prec = 1.0;
    double prob_empty = log(dir_prec);
@@ -400,34 +498,24 @@ Rcpp::List var_precision_sampler(
    arma::uvec *inds_eq_j = new arma::uvec[nmix];
    arma::vec ps(p, fill::ones);
    
-   // ── Storage ───────────────────────────────────────────────────────────────
    const unsigned n_mc = (unsigned)std::floor((double)nrun / thin);
    arma::cube  Lambda_mc(p, k, n_mc, fill::zeros);
    arma::mat   ps_mat(n_mc, p, fill::zeros);
    arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
    
-   // ── Progress bar ──────────────────────────────────────────────────────────
    Progress prog(nrun, true);
    
-   // ── Main Gibbs loop ───────────────────────────────────────────────────────
    for (int i = 0; i < nrun; ++i) {
       
       if (Progress::check_abort()) { delete[] inds_eq_j; return R_NilValue; }
       prog.increment();
       
-      // ── BLOCK 1: Sample B | Y, Omega ─────────────────────────────────────
-      // Use current ps (residual precisions) as the equation-level variances
       bool huge = (Kx > (int)Teff);
       sample_B(B, Ymat, X, Plam_B, ps, huge);
-      
-      // Update DL hyperparameters for B
       update_B_params(B, T_phi_B, Plam_B, tau_B, a_B_eff, b_B);
       
-      // ── Compute residuals given current B ─────────────────────────────────
-      arma::mat E = Ymat - X * B.t();   // Teff x p
+      arma::mat E = Ymat - X * B.t();
       
-      // ── BLOCK 2: Sample Omega | residuals E ───────────────────────────────
-      // Step 2a: Sample u and v (PrecFact latent variable representation)
       arma::mat Lmsg  = phimat.each_col() / ps;
       arma::mat Lmsg2 = symmatu(Lmsg.t() * phimat);
       Lmsg2.diag()   += 1.0;
@@ -440,19 +528,13 @@ Rcpp::List var_precision_sampler(
       arma::mat v     = E + noise * tmpmt;
       arma::vec ssqv  = sum(square(v), 0).t();
       
-      // Step 2b: Update loading params (T_phi, Plam)
       update_loading_params(phimat, T_phi, Plam, a_L, b_L);
-      
-      // Step 2c: Update loadings phimat
       update_phi(phimat, Plam, u, v, ssqv);
       
-      // ── BLOCK 3: Sample residual variances (DP) ───────────────────────────
       if (!i) {
-         // initialise clustering on first iteration
          unsigned n_init = GSL_MIN_INT((unsigned)std::ceil(log((double)p)), 2u);
          arma::mat dat(1, p); dat.row(0) = ssqv.t();
          del.set_size(p);
-         // simple random init
          for (unsigned j = 0; j < p; ++j) del(j) = j % n_init;
          for (unsigned j = 0; j < nmix; ++j) {
             inds_eq_j[j] = find(del == j);
@@ -496,7 +578,6 @@ Rcpp::List var_precision_sampler(
                   log_probs(j1) = dens + cluster_prob;
                }
             }
-            // current cluster
             unsigned j = cur;
             if (nj_val(j) == 1) {
                dens = pdf_empty; cluster_prob = prob_empty;
@@ -532,7 +613,6 @@ Rcpp::List var_precision_sampler(
             }
          }
          
-         // regenerate unique ps values
          for (unsigned j = 0; j < nmix; ++j) {
             if (nj_val(j)) {
                inds_eq_j[j] = find(del == j);
@@ -545,7 +625,6 @@ Rcpp::List var_precision_sampler(
                                       (unsigned)sum(nj_val > 0));
          prob_empty = log(dir_prec);
          
-         // ── Store every thin-th sample ─────────────────────────────────────
          int rem = (i+1) % thin;
          if (rem == 0) {
             int q = (int)std::floor((double)(i+1)/thin) - 1;
@@ -558,8 +637,269 @@ Rcpp::List var_precision_sampler(
    delete[] inds_eq_j;
    
    return Rcpp::List::create(
-      Rcpp::Named("Lambda")    = Lambda_mc,   // p x k x n_mc
-      Rcpp::Named("residuals") = ps_mat,      // n_mc x p  (for fact_prec_processing)
-      Rcpp::Named("B")         = B_mc         // p x Kx x n_mc
+      Rcpp::Named("Lambda")    = Lambda_mc,
+      Rcpp::Named("residuals") = ps_mat,
+      Rcpp::Named("B")         = B_mc
+   );
+}
+
+// ============================================================================
+//  REDUCED-RANK SAMPLER (B = U V^T), with selectable prior on V
+//     prior_B == "ridge": vec(V) ~ N(0, s_V2 * I)   [default, fast, simple]
+//     prior_B == "dl":    Dirichlet-Laplace shrinkage on V, same machinery
+//                         as the full-rank sampler's DL prior on B, just
+//                         applied to the Kx x r matrix V instead of p x Kx.
+//     prior_B == "mgps":  Multiplicative Gamma Process shrinkage on V's
+//                         columns, so shrinkage increases with column
+//                         index. Meant to be used with a generous rank
+//                         ceiling (r_max), letting effective rank emerge
+//                         from the posterior rather than being fixed.
+//  U always uses a ridge prior (s_U2); r is small so this rarely matters.
+// ============================================================================
+
+// [[Rcpp::export]]
+Rcpp::List var_precision_sampler_rr(
+      const arma::mat &Y,
+      const int lags       = 1,
+      const int k          = 5,
+      const int rank       = 3,
+      const int nrun       = 5000,
+      const int burn       = 2500,
+      const int thin       = 5,
+      const double a_L     = 0.5,
+      const double b_L     = 0.5,
+      const std::string prior_B = "ridge",   // "ridge", "dl", or "mgps"
+      const double s_U2    = 1.0,            // ridge prior variance for U
+      const double s_V2    = 1.0,            // ridge prior variance for V (if prior_B=="ridge")
+      const double a_V     = 0.5,            // DL shape for V (if prior_B=="dl")
+      const double b_V     = 0.5,            // DL rate  for V (if prior_B=="dl")
+      const double mgp_nu  = 3.0,            // MGPS local-precision shape (if prior_B=="mgps")
+      const double mgp_a1  = 2.1,            // MGPS delta_1 shape (Durante 2017 default)
+      const double mgp_b1  = 1.0,            // MGPS delta_1 rate
+      const double mgp_a2  = 3.1,            // MGPS delta_{k>1} shape (Durante 2017 default)
+      const double mgp_b2  = 1.0,            // MGPS delta_{k>1} rate
+      const double as      = 0.1,
+      const double bs      = 0.1,
+      const double a_dir   = 0.1,
+      const double b_dir   = 0.1
+) {
+   const bool use_dl  = (prior_B == "dl");
+   const bool use_mgp = (prior_B == "mgps");
+   if (!use_dl && !use_mgp && prior_B != "ridge")
+      Rcpp::stop("prior_B must be 'ridge', 'dl', or 'mgps'");
+   
+   const unsigned T = Y.n_rows;
+   const unsigned p = Y.n_cols;
+   const unsigned Teff = T - lags;
+   const unsigned Kx   = lags * p;
+   const unsigned r    = (unsigned)rank;
+   
+   if (r > p || r > Kx)
+      Rcpp::stop("rank must be <= min(p, lags*p)");
+   
+   arma::mat Ymat(Teff, p), X(Teff, Kx);
+   for (unsigned t = 0; t < Teff; ++t) {
+      Ymat.row(t) = Y.row(t + lags);
+      for (int lag = 0; lag < lags; ++lag)
+         X.row(t).subvec(lag*p, (lag+1)*p - 1) = Y.row(t + lags - 1 - lag);
+   }
+   arma::mat XtX = symmatu(X.t() * X);
+   
+   arma::mat U(p,  r, fill::randn);  U *= 0.1;
+   arma::mat V(Kx, r, fill::randn);  V *= 0.1;
+   
+   // -- DL state for V, only used if prior_B == "dl" --------------------------
+   const double a_V_eff = 1.0 / (double)(Kx * r);   // analogous to a_B_eff
+   arma::mat T_phi_V(Kx, r, fill::value(1.0/r));
+   arma::mat Plam_V(Kx, r, fill::value(1.0/r));
+   arma::vec tau_V(Kx, fill::value(0.5));
+   
+   // -- MGP state for V, only used if prior_B == "mgp" -------------------------
+   MGPState mgp_st;
+   if (use_mgp) mgp_st = init_mgp(Kx, r, mgp_nu, mgp_a1, mgp_b1, mgp_a2, mgp_b2);
+   
+   // constant ridge prior-variance matrix, reused every iteration if ridge
+   arma::mat ridge_mat_V(Kx, r, fill::value(s_V2));
+   
+   arma::mat phimat(p, k, fill::randn);
+   arma::mat T_phi  = randg<arma::mat>(p, k, distr_param(a_L, 0.5));
+   T_phi.transform([](double v){ return GSL_MAX_DBL(v, 9e-17); });
+   arma::mat Plam   = 1. / (1. + square(T_phi));
+   
+   const unsigned nmix = p;
+   double dir_prec = 1.0;
+   double prob_empty = log(dir_prec);
+   arma::uvec nj_val(nmix, fill::zeros), del;
+   arma::vec  log_nj_val(nmix), probs(nmix), log_probs(nmix);
+   arma::Col<int> d;
+   arma::uvec *inds_eq_j = new arma::uvec[nmix];
+   arma::vec ps(p, fill::ones);
+   
+   const unsigned n_mc = (unsigned)std::floor((double)nrun / thin);
+   arma::cube  Lambda_mc(p, k, n_mc, fill::zeros);
+   arma::mat   ps_mat(n_mc, p, fill::zeros);
+   arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
+   arma::cube  U_mc(p,  r, n_mc, fill::zeros);
+   arma::cube  V_mc(Kx, r, n_mc, fill::zeros);
+   arma::mat   tau_mc(n_mc, r, fill::zeros);   // MGP column shrinkage trace (all-ones if not mgp)
+   
+   Progress prog(nrun, true);
+   
+   for (int i = 0; i < nrun; ++i) {
+      
+      if (Progress::check_abort()) { delete[] inds_eq_j; return R_NilValue; }
+      prog.increment();
+      
+      // ── BLOCK 1: reduced-rank B via U, V ─────────────────────────────────
+      arma::mat Z = X * V;
+      sample_U(U, Ymat, Z, ps, s_U2);
+      
+      arma::mat PriorVarV_owned;
+      if (use_mgp) PriorVarV_owned = mgp_prior_var(mgp_st);
+      const arma::mat &PriorVarV = use_mgp ? PriorVarV_owned
+      : (use_dl ? Plam_V : ridge_mat_V);
+      sample_V(V, U, Ymat, X, XtX, ps, PriorVarV);
+      if (use_dl)  update_B_params(V, T_phi_V, Plam_V, tau_V, a_V_eff, b_V);
+      if (use_mgp) update_mgp(mgp_st, V);
+      
+      Z = X * V;
+      arma::mat B = U * V.t();
+      
+      arma::mat E = Ymat - Z * U.t();
+      
+      // ── BLOCK 2: Sample Omega | residuals E ───────────────────────────────
+      arma::mat Lmsg  = phimat.each_col() / ps;
+      arma::mat Lmsg2 = symmatu(Lmsg.t() * phimat);
+      Lmsg2.diag()   += 1.0;
+      
+      arma::mat noise(Teff, k, fill::randn);
+      arma::mat chol_prec_u = chol(Lmsg2);
+      arma::mat u = noise * trimatu(chol_prec_u);
+      
+      arma::mat tmpmt = solve(trimatl(chol_prec_u.t()), Lmsg.t());
+      arma::mat v     = E + noise * tmpmt;
+      arma::vec ssqv  = sum(square(v), 0).t();
+      
+      update_loading_params(phimat, T_phi, Plam, a_L, b_L);
+      update_phi(phimat, Plam, u, v, ssqv);
+      
+      // ── BLOCK 3: Sample residual variances (DP) ───────────────────────────
+      if (!i) {
+         unsigned n_init = GSL_MIN_INT((unsigned)std::ceil(log((double)p)), 2u);
+         arma::mat dat(1, p); dat.row(0) = ssqv.t();
+         del.set_size(p);
+         for (unsigned j = 0; j < p; ++j) del(j) = j % n_init;
+         for (unsigned j = 0; j < nmix; ++j) {
+            inds_eq_j[j] = find(del == j);
+            nj_val(j)    = inds_eq_j[j].n_elem;
+            log_nj_val(j)= (nj_val(j) > 0) ? log((double)nj_val(j)) : -1e10;
+         }
+      }
+      
+      arma::vec v_atoms(nmix, fill::zeros);
+      for (unsigned j = 0; j < nmix; ++j)
+         if (nj_val(j)) v_atoms(j) = sum(ssqv(inds_eq_j[j]));
+         
+         double log_probs_max;
+         for (unsigned jj = 0; jj < p; ++jj) {
+            double dens, cluster_prob;
+            double pdf_empty = log_marginal_pdf(Teff, as, bs, ssqv(jj));
+            
+            arma::uvec non_empty = find(nj_val > 0);
+            arma::uword cur      = del(jj);
+            
+            if (nj_val(cur) > 1) {
+               arma::uvec empty_inds = find(nj_val == 0, 1, "first");
+               non_empty.resize(non_empty.n_elem + 1);
+               non_empty.tail(1) = empty_inds(0);
+            }
+            
+            unsigned nclust = non_empty.n_elem;
+            log_probs.set_size(nclust);
+            
+            for (unsigned j1 = 0; j1 < nclust; ++j1) {
+               unsigned j = non_empty(j1);
+               if (j != cur) {
+                  if (nj_val(j) < 1) {
+                     dens = pdf_empty; cluster_prob = prob_empty;
+                  } else {
+                     dens = log_marginal_pdf(Teff,
+                                             as + ((double)(Teff*nj_val(j)))/2.,
+                                             bs + v_atoms(j)/2., ssqv(jj));
+                     cluster_prob = log_nj_val(j);
+                  }
+                  log_probs(j1) = dens + cluster_prob;
+               }
+            }
+            unsigned j = cur;
+            if (nj_val(j) == 1) {
+               dens = pdf_empty; cluster_prob = prob_empty;
+            } else {
+               dens = log_marginal_pdf(Teff,
+                                       as + ((double)(Teff*(nj_val(j)-1)))/2.,
+                                       bs + (v_atoms(j)-ssqv(jj))/2., ssqv(jj));
+               cluster_prob = log((double)(nj_val(j)-1));
+            }
+            arma::uvec indddd = find(non_empty == j, 1, "first");
+            log_probs(indddd(0)) = dens + cluster_prob;
+            
+            double log_DEN = log_sum_exp(log_probs);
+            probs = normalise(exp(log_probs - log_DEN), 1);
+            
+            if (gsl_fcmp(sum(probs), 1.0, 1e-5)) {
+               log_probs_max = max(log_probs);
+               log_probs    -= log_probs_max;
+               probs         = normalise(exp(log_probs), 1);
+            }
+            if (sum(probs) == 0) Rcpp::stop("sum(probs)==0 in DP update");
+            
+            d.set_size(probs.n_elem);
+            R::rmultinom(1, probs.begin(), probs.n_elem, d.begin());
+            arma::uvec dd = find(d == 1, 1, "first");
+            del(jj) = non_empty(dd(0));
+            
+            if (del(jj) != cur) {
+               j = cur; --nj_val(j);
+               if (nj_val(j)) { log_nj_val(j) = log((double)nj_val(j)); v_atoms(j) -= ssqv(jj); }
+               j = del(jj); log_nj_val(j) = log((double)(++nj_val(j)));
+               if (nj_val(j) == 1) v_atoms(j) = ssqv(jj); else v_atoms(j) += ssqv(jj);
+            }
+         }
+         
+         for (unsigned j = 0; j < nmix; ++j) {
+            if (nj_val(j)) {
+               inds_eq_j[j] = find(del == j);
+               double atom = randg(distr_param(as + 0.5*(Teff*nj_val(j)),
+                                               1./(bs + 0.5*v_atoms(j))));
+               ps(inds_eq_j[j]).fill(atom);
+            } else inds_eq_j[j].reset();
+         }
+         dir_prec   = update_dir_prec(dir_prec, a_dir, b_dir, p,
+                                      (unsigned)sum(nj_val > 0));
+         prob_empty = log(dir_prec);
+         
+         int rem = (i+1) % thin;
+         if (rem == 0) {
+            int q = (int)std::floor((double)(i+1)/thin) - 1;
+            Lambda_mc.slice(q) = phimat;
+            ps_mat.row(q)      = ps.t();
+            B_mc.slice(q)      = B;
+            U_mc.slice(q)      = U;
+            V_mc.slice(q)      = V;
+            if (use_mgp) tau_mc.row(q) = mgp_st.tau.t(); else tau_mc.row(q).ones();
+         }
+   }
+   
+   delete[] inds_eq_j;
+   
+   return Rcpp::List::create(
+      Rcpp::Named("Lambda")    = Lambda_mc,
+      Rcpp::Named("residuals") = ps_mat,
+      Rcpp::Named("B")         = B_mc,
+      Rcpp::Named("U")         = U_mc,
+      Rcpp::Named("V")         = V_mc,
+      Rcpp::Named("rank")      = (int)r,
+      Rcpp::Named("prior_B")   = prior_B,
+      Rcpp::Named("tau")       = tau_mc
    );
 }

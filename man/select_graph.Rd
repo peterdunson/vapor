@@ -23,7 +23,8 @@ select_graph(
 }
 \value{
 A list with `Omega` (posterior mean precision matrix), `P` (a 0/1
-  adjacency matrix of selected edges), and `pFDR` (the realized pFDR).
+  adjacency matrix of selected edges, zero on the diagonal), and `pFDR` (the
+  realized pFDR).
 }
 \description{
 Applies the posterior false discovery rate (pFDR) edge-selection procedure to
