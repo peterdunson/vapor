@@ -373,66 +373,6 @@ void sample_V(arma::mat &V, const arma::mat &U, const arma::mat &Ymat,
 }
 
 // ============================================================================
-//  MULTIPLICATIVE GAMMA PROCESS (MGPS) SHRINKAGE ON V's COLUMNS
-//  (Bhattacharya & Dunson 2011). Column h's entries share local precisions
-//  phi_jh ~ Gamma(nu/2, nu/2) and a cumulative global scale
-//  tau_h = prod_{l<=h} delta_l, with delta_1 ~ Gamma(a1,1),
-//  delta_h ~ Gamma(a2,1) for h>1, a2>1 so tau_h grows with h and later
-//  columns are pushed toward zero. Returns the Kx x r prior-variance matrix
-//  (1/(phi_jh*tau_h)) to feed into the same sample_V() used for ridge/dl.
-// ============================================================================
-
-struct MGPState {
-   arma::mat Phi;    // Kx x r local precisions
-   arma::vec delta;  // r     column multipliers
-   arma::vec tau;    // r     cumulative products of delta
-   double nu, a1, b1, a2, b2;
-};
-
-MGPState init_mgp(unsigned Kx, unsigned r, double nu, double a1, double b1,
-                  double a2, double b2) {
-   MGPState st;
-   st.Phi   = randg<arma::mat>(Kx, r, distr_param(nu/2.0, 2.0/nu));
-   st.delta = randg<arma::vec>(r,     distr_param(a1, 1.0/b1));
-   for (unsigned h = 1; h < r; ++h)
-      st.delta(h) = R::rgamma(a2, 1.0/b2);
-   st.tau   = cumprod(st.delta);
-   st.nu = nu; st.a1 = a1; st.b1 = b1; st.a2 = a2; st.b2 = b2;
-   return st;
-}
-
-arma::mat mgp_prior_var(const MGPState &st) {
-   arma::mat tau_row = arma::repmat(st.tau.t(), st.Phi.n_rows, 1);
-   return 1.0 / (st.Phi % tau_row);
-}
-
-void update_mgp(MGPState &st, const arma::mat &V) {
-   const unsigned Kx = V.n_rows, r = V.n_cols;
-   arma::mat Vsq = square(V);
-   
-   // local precisions phi_jh | V, tau
-   arma::mat tau_row = arma::repmat(st.tau.t(), Kx, 1);
-   arma::mat shape_m(Kx, r, fill::value(st.nu/2.0 + 0.5));
-   arma::mat rate_m  = st.nu/2.0 + 0.5 * (tau_row % Vsq);
-   for (unsigned j = 0; j < Kx; ++j)
-      for (unsigned h = 0; h < r; ++h)
-         st.Phi(j,h) = GSL_MAX_DBL(randg(distr_param(shape_m(j,h), 1.0/rate_m(j,h))), 1e-8);
-   
-   // column sums S_h = sum_j phi_jh * V_jh^2
-   arma::rowvec S = sum(st.Phi % Vsq, 0);
-   
-   // sequential update of delta_1..delta_r
-   for (unsigned m = 0; m < r; ++m) {
-      double shape = (m == 0 ? st.a1 : st.a2) + 0.5 * (double)Kx * (double)(r - m);
-      double rate  = (m == 0 ? st.b1 : st.b2);
-      for (unsigned l = m; l < r; ++l)
-         rate += 0.5 * (st.tau(l) / st.delta(m)) * S(l);
-      st.delta(m) = GSL_MAX_DBL(randg(distr_param(shape, 1.0/rate)), 1e-8);
-      st.tau = cumprod(st.delta);
-   }
-}
-
-// ============================================================================
 //  DP RESIDUAL VARIANCE UPDATE (shared, unchanged)
 // ============================================================================
 
@@ -649,11 +589,6 @@ Rcpp::List var_precision_sampler(
 //     prior_B == "dl":    Dirichlet-Laplace shrinkage on V, same machinery
 //                         as the full-rank sampler's DL prior on B, just
 //                         applied to the Kx x r matrix V instead of p x Kx.
-//     prior_B == "mgps":  Multiplicative Gamma Process shrinkage on V's
-//                         columns, so shrinkage increases with column
-//                         index. Meant to be used with a generous rank
-//                         ceiling (r_max), letting effective rank emerge
-//                         from the posterior rather than being fixed.
 //  U always uses a ridge prior (s_U2); r is small so this rarely matters.
 // ============================================================================
 
@@ -668,25 +603,19 @@ Rcpp::List var_precision_sampler_rr(
       const int thin       = 5,
       const double a_L     = 0.5,
       const double b_L     = 0.5,
-      const std::string prior_B = "ridge",   // "ridge", "dl", or "mgps"
+      const std::string prior_B = "ridge",   // "ridge" or "dl"
       const double s_U2    = 1.0,            // ridge prior variance for U
       const double s_V2    = 1.0,            // ridge prior variance for V (if prior_B=="ridge")
       const double a_V     = 0.5,            // DL shape for V (if prior_B=="dl")
       const double b_V     = 0.5,            // DL rate  for V (if prior_B=="dl")
-      const double mgp_nu  = 3.0,            // MGPS local-precision shape (if prior_B=="mgps")
-      const double mgp_a1  = 2.1,            // MGPS delta_1 shape (Durante 2017 default)
-      const double mgp_b1  = 1.0,            // MGPS delta_1 rate
-      const double mgp_a2  = 3.1,            // MGPS delta_{k>1} shape (Durante 2017 default)
-      const double mgp_b2  = 1.0,            // MGPS delta_{k>1} rate
       const double as      = 0.1,
       const double bs      = 0.1,
       const double a_dir   = 0.1,
       const double b_dir   = 0.1
 ) {
    const bool use_dl  = (prior_B == "dl");
-   const bool use_mgp = (prior_B == "mgps");
-   if (!use_dl && !use_mgp && prior_B != "ridge")
-      Rcpp::stop("prior_B must be 'ridge', 'dl', or 'mgps'");
+   if (!use_dl && prior_B != "ridge")
+      Rcpp::stop("prior_B must be 'ridge' or 'dl'");
    
    const unsigned T = Y.n_rows;
    const unsigned p = Y.n_cols;
@@ -714,9 +643,6 @@ Rcpp::List var_precision_sampler_rr(
    arma::mat Plam_V(Kx, r, fill::value(1.0/r));
    arma::vec tau_V(Kx, fill::value(0.5));
    
-   // -- MGP state for V, only used if prior_B == "mgp" -------------------------
-   MGPState mgp_st;
-   if (use_mgp) mgp_st = init_mgp(Kx, r, mgp_nu, mgp_a1, mgp_b1, mgp_a2, mgp_b2);
    
    // constant ridge prior-variance matrix, reused every iteration if ridge
    arma::mat ridge_mat_V(Kx, r, fill::value(s_V2));
@@ -741,7 +667,6 @@ Rcpp::List var_precision_sampler_rr(
    arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
    arma::cube  U_mc(p,  r, n_mc, fill::zeros);
    arma::cube  V_mc(Kx, r, n_mc, fill::zeros);
-   arma::mat   tau_mc(n_mc, r, fill::zeros);   // MGP column shrinkage trace (all-ones if not mgp)
    
    Progress prog(nrun, true);
    
@@ -754,13 +679,9 @@ Rcpp::List var_precision_sampler_rr(
       arma::mat Z = X * V;
       sample_U(U, Ymat, Z, ps, s_U2);
       
-      arma::mat PriorVarV_owned;
-      if (use_mgp) PriorVarV_owned = mgp_prior_var(mgp_st);
-      const arma::mat &PriorVarV = use_mgp ? PriorVarV_owned
-      : (use_dl ? Plam_V : ridge_mat_V);
+      const arma::mat &PriorVarV = use_dl ? Plam_V : ridge_mat_V;
       sample_V(V, U, Ymat, X, XtX, ps, PriorVarV);
       if (use_dl)  update_B_params(V, T_phi_V, Plam_V, tau_V, a_V_eff, b_V);
-      if (use_mgp) update_mgp(mgp_st, V);
       
       Z = X * V;
       arma::mat B = U * V.t();
@@ -886,7 +807,6 @@ Rcpp::List var_precision_sampler_rr(
             B_mc.slice(q)      = B;
             U_mc.slice(q)      = U;
             V_mc.slice(q)      = V;
-            if (use_mgp) tau_mc.row(q) = mgp_st.tau.t(); else tau_mc.row(q).ones();
          }
    }
    
@@ -899,7 +819,6 @@ Rcpp::List var_precision_sampler_rr(
       Rcpp::Named("U")         = U_mc,
       Rcpp::Named("V")         = V_mc,
       Rcpp::Named("rank")      = (int)r,
-      Rcpp::Named("prior_B")   = prior_B,
-      Rcpp::Named("tau")       = tau_mc
+      Rcpp::Named("prior_B")   = prior_B
    );
 }

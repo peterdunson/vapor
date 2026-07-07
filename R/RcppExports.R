@@ -5,7 +5,7 @@ var_precision_sampler <- function(Y, lags = 1L, k = 5L, nrun = 5000L, burn = 250
     .Call(`_VAPOR_var_precision_sampler`, Y, lags, k, nrun, burn, thin, a_L, b_L, a_B, b_B, as, bs, a_dir, b_dir)
 }
 
-var_precision_sampler_rr <- function(Y, lags = 1L, k = 5L, rank = 3L, nrun = 5000L, burn = 2500L, thin = 5L, a_L = 0.5, b_L = 0.5, prior_B = "ridge", s_U2 = 1.0, s_V2 = 1.0, a_V = 0.5, b_V = 0.5, mgp_nu = 3.0, mgp_a1 = 2.1, mgp_b1 = 1.0, mgp_a2 = 3.1, mgp_b2 = 1.0, as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1) {
-    .Call(`_VAPOR_var_precision_sampler_rr`, Y, lags, k, rank, nrun, burn, thin, a_L, b_L, prior_B, s_U2, s_V2, a_V, b_V, mgp_nu, mgp_a1, mgp_b1, mgp_a2, mgp_b2, as, bs, a_dir, b_dir)
+var_precision_sampler_rr <- function(Y, lags = 1L, k = 5L, rank = 3L, nrun = 5000L, burn = 2500L, thin = 5L, a_L = 0.5, b_L = 0.5, prior_B = "ridge", s_U2 = 1.0, s_V2 = 1.0, a_V = 0.5, b_V = 0.5, as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1) {
+    .Call(`_VAPOR_var_precision_sampler_rr`, Y, lags, k, rank, nrun, burn, thin, a_L, b_L, prior_B, s_U2, s_V2, a_V, b_V, as, bs, a_dir, b_dir)
 }
 

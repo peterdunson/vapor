@@ -16,14 +16,9 @@ vapor(
   b_L = 0.5,
   a_B = 0.5,
   b_B = 0.5,
-  prior_B = c("dl", "ridge", "mgps"),
+  prior_B = c("dl", "ridge"),
   s_U2 = 1,
   s_V2 = 1,
-  mgp_nu = 3,
-  mgp_a1 = 2.1,
-  mgp_b1 = 1,
-  mgp_a2 = 3.1,
-  mgp_b2 = 1,
   as = 0.1,
   bs = 0.1,
   a_dir = 0.1,
@@ -55,18 +50,10 @@ prior_B = "dl").}
 \item{prior_B}{Prior on the reduced-rank factor V. Ignored when
 rank = "full" (always Dirichlet-Laplace on the full B). `"dl"`
 (default) uses Dirichlet-Laplace shrinkage on V; `"ridge"` uses a
-constant-variance Gaussian prior; `"mgps"` uses a Multiplicative
-Gamma Process shrinkage prior across V's columns, so shrinkage
-increases with column index -- intended for use with a generous
-rank ceiling, letting effective rank emerge from the posterior.}
+constant-variance Gaussian prior.}
 
 \item{s_U2, s_V2}{Ridge prior variances for U and V. Only used when rank
 is numeric; s_V2 only applies when prior_B = "ridge".}
-
-\item{mgp_nu, mgp_a1, mgp_b1, mgp_a2, mgp_b2}{MGPS hyperparameters (only used
-when prior_B = "mgps"): local-precision shape, first-column shape/rate,
-and later-column shape/rate (mgp_a2/mgp_b2 give increasing shrinkage
-for columns beyond the first). Defaults follow Durante (2017).}
 
 \item{as, bs}{Dirichlet process base-measure shape/rate.}
 

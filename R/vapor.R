@@ -18,14 +18,7 @@
 #' @param prior_B Prior on the reduced-rank factor V. Ignored when
 #'   rank = "full" (always Dirichlet-Laplace on the full B). `"dl"`
 #'   (default) uses Dirichlet-Laplace shrinkage on V; `"ridge"` uses a
-#'   constant-variance Gaussian prior; `"mgps"` uses a Multiplicative
-#'   Gamma Process shrinkage prior across V's columns, so shrinkage
-#'   increases with column index -- intended for use with a generous
-#'   rank ceiling, letting effective rank emerge from the posterior.
-#' @param mgp_nu,mgp_a1,mgp_b1,mgp_a2,mgp_b2 MGPS hyperparameters (only used
-#'   when prior_B = "mgps"): local-precision shape, first-column shape/rate,
-#'   and later-column shape/rate (mgp_a2/mgp_b2 give increasing shrinkage
-#'   for columns beyond the first). Defaults follow Durante (2017).
+#'   constant-variance Gaussian prior.
 #' @param s_U2,s_V2 Ridge prior variances for U and V. Only used when rank
 #'   is numeric; s_V2 only applies when prior_B = "ridge".
 #' @param as,bs Dirichlet process base-measure shape/rate.
@@ -38,10 +31,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
                   nrun = 5000, burn = floor(nrun / 2), thin = 5,
                   a_L = 0.5, b_L = 0.5,
                   a_B = 0.5, b_B = 0.5,
-                  prior_B = c("dl", "ridge", "mgps"),
+                  prior_B = c("dl", "ridge"),
                   s_U2 = 1.0, s_V2 = 1.0,
-                  mgp_nu = 3.0, mgp_a1 = 2.1, mgp_b1 = 1.0,
-                  mgp_a2 = 3.1, mgp_b2 = 1.0,
                   as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1,
                   jitter = NULL, seed = NULL) {
    
@@ -81,8 +72,6 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
          a_L = a_L, b_L = b_L, prior_B = prior_B,
          s_U2 = s_U2, s_V2 = s_V2, a_V = a_B, b_V = b_B,
-         mgp_nu = mgp_nu, mgp_a1 = mgp_a1, mgp_b1 = mgp_b1,
-         mgp_a2 = mgp_a2, mgp_b2 = mgp_b2,
          as = as, bs = bs, a_dir = a_dir, b_dir = b_dir
       )
       rank_used <- as.integer(rank)
@@ -97,16 +86,14 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    B      <- res$B[, , keep, drop = FALSE]
    
    V_kept   <- NULL
-   tau_kept <- NULL
    if (!identical(rank, "full")) {
       V_kept   <- res$V[, , keep, drop = FALSE]
-      tau_kept <- res$tau[keep, , drop = FALSE]
    }
    
    Omega <- posterior_mean_omega(Lambda, ps)
    
    out <- list(Lambda = Lambda, residual_prec = ps, B = B, Omega = Omega,
-               V = V_kept, tau = tau_kept,
+               V = V_kept,
                dims = list(T = T_obs, p = p, k = k, lags = lags,
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
