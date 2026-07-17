@@ -7,145 +7,168 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+````{r, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 5)
-```
+````
 
-## What VAPOR does
+## The model
 
-VAPOR jointly estimates, in a single Gibbs sampler:
+VAPOR fits a VAR(1) whose innovations have a structured precision matrix:
 
-- **B**, the VAR(1) coefficient matrix (the dynamics), and
-- **Omega**, the precision matrix of the innovations, modeled as a low-rank
-  plus diagonal factor structure (`Omega = Lambda Lambda' + Delta`).
+$$
+\mathbf{y}_t = B\,\mathbf{y}_{t-1} + \boldsymbol{\epsilon}_t,
+\qquad
+\boldsymbol{\epsilon}_t \sim N_p(\mathbf{0},\, \Omega^{-1}),
+\qquad
+\Omega = \Lambda\Lambda^\top + \Delta.
+$$
 
-The two are estimated together: the coefficient update is GLS-transformed by the
-current precision, and the precision is estimated from the current residuals.
-This is aimed at the high-dimensional regime where the number of series `p` is
-close to the number of time points `T`, where a plain VAR overfits and the
-sample covariance is not invertible.
+Two objects are estimated **jointly**, in one Gibbs sampler:
 
-```{r setup}
+| Object | What it is | Role |
+|---|---|---|
+| `B` | VAR coefficient matrix | temporal **dynamics** ($\mathbf{y}_t$ from $\mathbf{y}_{t-1}$) |
+| `Omega` | innovation **precision** | contemporaneous **conditional dependence** of the shocks |
+
+`Omega` is low-rank plus diagonal ($\Lambda\Lambda^\top + \Delta$), so it stays
+estimable in high dimensions and its off-diagonals form a Gaussian graphical
+model. Fitting `B` and `Omega` together (rather than a VAR first, then a
+precision on its residuals) lets uncertainty flow between them, which matters
+most when the VAR is hard to estimate.
+
+````{r setup}
 library(VAPOR)
+library(MASS)
 set.seed(1)
-```
+````
 
-## Simulate data
+## Simulate from the model
 
-We generate `T = 120` observations of `p = 40` series from a VAR(1) with a
-low-rank-plus-diagonal innovation precision, so we know the true `Omega`.
+We generate data exactly as in Simulation A of the paper:
 
-```{r simulate}
-p <- 40; T <- 120; k_true <- 3
+- **Precision:** $\Omega = \Lambda\Lambda^\top + I$, with $\Lambda$ (`p x k`)
+  20% nonzero, entries $\pm 1.5$.
+- **Dynamics:** $B$ 10% nonzero, scaled to spectral radius $\rho(B)$.
+- **Size:** $p = 20$, $k = 5$, $\rho(B) = 0.95$, $T = 100$.
 
-# true innovation precision: Lambda Lambda' + diagonal
-Lambda_true <- matrix(rnorm(p * k_true, 0, 0.6), p, k_true)
-Delta_true  <- diag(runif(p, 0.5, 1.5))
-Omega_true  <- Lambda_true %*% t(Lambda_true) + Delta_true
-Sigma_true  <- solve(Omega_true)
+````{r dgp}
+simulate_sim_a <- function(T, p = 20, k = 5, rho = 0.95) {
+   # sparse loadings -> precision Omega = Lambda Lambda' + I
+   Lambda <- matrix(0, p, k)
+   nz <- runif(p * k) < 0.20
+   Lambda[nz] <- 1.5 * sample(c(-1, 1), sum(nz), replace = TRUE)
+   Omega <- tcrossprod(Lambda) + diag(p)
+   Sigma <- chol2inv(chol(Omega))
 
-# true VAR(1) dynamics: a stable, mildly persistent B
-B_true <- matrix(rnorm(p * p, 0, 0.03), p, p); diag(B_true) <- 0.3
+   # sparse B scaled to spectral radius rho
+   B <- matrix(0, p, p)
+   nzB <- runif(p * p) < 0.10
+   B[nzB] <- rnorm(sum(nzB))
+   B <- B * (rho / max(abs(eigen(B, only.values = TRUE)$values)))
 
-# simulate
-chol_S <- chol(Sigma_true)
-Y <- matrix(0, T, p)
-for (t in 2:T) {
-   eps <- as.numeric(crossprod(chol_S, rnorm(p)))
-   Y[t, ] <- B_true %*% Y[t-1, ] + eps
+   # VAR(1)
+   e <- MASS::mvrnorm(T, rep(0, p), Sigma)
+   Y <- matrix(0, T, p); Y[1, ] <- e[1, ]
+   for (t in 2:T) Y[t, ] <- B %*% Y[t-1, ] + e[t, ]
+
+   list(Y = Y, B = B, Omega = Omega)
 }
-Y <- scale(Y)
-dim(Y)
-```
 
-## Fit VAPOR
+sim <- simulate_sim_a(T = 100)
+dim(sim$Y)
+````
 
-The main entry point is `vapor()`. For `T` close to `p`, use the reduced-rank
-parameterization (`rank = r`) with the default Dirichlet-Laplace prior on the
-VAR coefficients. `k` is the number of precision factors.
+## Fit
 
-```{r fit}
-fit <- vapor(Y, lags = 1, k = 5, rank = 3,
+`vapor()` is the entry point. Here $T > p$, so we use the default full-rank
+sampler; `k = 5` matches the number of true factors.
+
+````{r fit}
+fit <- vapor(sim$Y, lags = 1, k = 5, rank = "full",
              nrun = 3000, burn = 1500, thin = 5, seed = 1)
 fit
-```
+````
 
-The returned object contains posterior draws and the posterior-mean precision:
+What comes back:
 
-```{r structure}
-str(fit, max.level = 1)
-```
+| Component | Contents |
+|---|---|
+| `fit$Omega` | posterior-mean precision (`p x p`) |
+| `fit$B` | VAR coefficient draws (`p x p x n_draws`) |
+| `fit$Lambda` | factor-loading draws |
+| `fit$dims`, `fit$settings` | dimensions and sampler settings |
 
-Key components:
+## Did it recover Omega?
 
-- `fit$Omega` -- the `p x p` posterior-mean innovation precision matrix.
-- `fit$B` -- a `p x p x n_draws` array of VAR coefficient draws.
-- `fit$Lambda` -- the factor-loading draws.
-- `fit$dims`, `fit$settings` -- dimensions and sampler settings.
+Compare the estimate to the truth on the partial-correlation scale, with the
+graphical lasso as a reference point.
 
-## Recover the precision matrix
+````{r omega}
+frob <- function(Oe, Ot) norm(cov2cor(Oe) - cov2cor(Ot), "F")
+cat(sprintf("VAPOR  Frobenius = %.3f\n", frob(fit$Omega, sim$Omega)))
 
-The posterior-mean precision is in `fit$Omega`. We compare it to the truth.
+if (requireNamespace("glasso", quietly = TRUE)) {
+   gl <- glasso::glasso(cov(scale(sim$Y)), rho = 0.1)
+   cat(sprintf("Glasso Frobenius = %.3f\n", frob(gl$wi, sim$Omega)))
+}
+````
 
-```{r omega}
-Omega_hat <- fit$Omega
+The true conditional-dependence blocks should reappear in VAPOR's estimate, in
+the same positions and signs.
 
-# Frobenius distance to the truth
-frob <- sqrt(sum((Omega_hat - Omega_true)^2))
-cat(sprintf("Frobenius ||Omega_hat - Omega_true|| = %.2f\n", frob))
-```
-
-```{r omega-heatmap, fig.width = 8, fig.height = 4}
-op <- par(mfrow = c(1, 2), mar = c(2,2,2,1))
-image(Omega_true[, p:1], main = "True Omega",  axes = FALSE, col = hcl.colors(50, "Blue-Red"))
-image(Omega_hat[, p:1],  main = "VAPOR Omega", axes = FALSE, col = hcl.colors(50, "Blue-Red"))
+````{r heatmap, fig.width = 8, fig.height = 4}
+to_pc <- function(Om) { pc <- -cov2cor(Om); diag(pc) <- 0; pc }
+p <- ncol(sim$Y)
+op <- par(mfrow = c(1, 2), mar = c(2, 2, 2, 1))
+image(to_pc(sim$Omega)[, p:1], main = "True", axes = FALSE,
+      col = hcl.colors(50, "Blue-Red"), zlim = c(-1, 1))
+image(to_pc(fit$Omega)[, p:1], main = "VAPOR", axes = FALSE,
+      col = hcl.colors(50, "Blue-Red"), zlim = c(-1, 1))
 par(op)
-```
+````
 
-## Extract the VAR coefficients
+## Use the pieces
 
-The posterior-mean `B` (the dynamics) is obtained by averaging the draws.
+**Dynamics (`B`).** Average the draws for a one-step-ahead forecast.
 
-```{r coef}
+````{r coef}
 B_hat <- apply(fit$B, c(1, 2), mean)
-dim(B_hat)
+head(as.numeric(B_hat %*% sim$Y[nrow(sim$Y), ]))
+````
 
-# one-step-ahead forecast from the last observation
-y_last <- Y[nrow(Y), ]
-y_forecast <- as.numeric(B_hat %*% y_last)
-head(y_forecast)
-```
-
-## Nowcasting: borrowing strength across series
-
-VAPOR's precision matrix can reconstruct a held-out subset of series from the
+**Precision (`Omega`) — nowcasting.** Reconstruct held-out series from the
 observed ones in the same period, via the Gaussian conditional mean
-`y_hidden = -Omega_hh^{-1} Omega_ho y_observed`. This uses only `Omega`.
+$\hat{\mathbf{y}}_{\text{hid}} = -\Omega_{hh}^{-1}\Omega_{ho}\,\mathbf{y}_{\text{obs}}$.
+This uses only `Omega`.
 
-```{r nowcast}
-Omega <- fit$Omega
+````{r nowcast}
 nowcast <- function(Omega, y_obs, obs, hid)
    as.numeric(-solve(Omega[hid, hid]) %*% Omega[hid, obs] %*% y_obs)
 
-# hide 30% of series in the last period, predict from the rest
 set.seed(2)
 hid <- sort(sample(p, floor(0.3 * p)))
 obs <- setdiff(seq_len(p), hid)
-y   <- Y[nrow(Y), ]
+y   <- sim$Y[nrow(sim$Y), ]
 
-pred <- nowcast(Omega, y[obs], obs, hid)
-mspe <- mean((y[hid] - pred)^2)
-cat(sprintf("Nowcast MSPE on held-out series: %.3f\n", mspe))
-```
+pred <- nowcast(fit$Omega, y[obs], obs, hid)
+cat(sprintf("Nowcast MSPE: %.3f\n", mean((y[hid] - pred)^2)))
+````
 
-## Notes on usage
+**A sparse graph.** `select_graph()` thresholds `Omega` into edges with
+posterior false-discovery-rate control.
 
-- **Rank.** Use `rank = "full"` when `T` comfortably exceeds `p`; use a small
-  integer `rank` (e.g. 2--5) when `T` is close to `p`, where the full VAR
-  overfits.
-- **k (factors).** The number of precision factors. Choose by held-out
-  prediction; performance typically plateaus once `k` is large enough to
-  capture the dominant factors.
-- **Priors on B.** `prior_B = "dl"` (default) applies Dirichlet-Laplace
-  shrinkage; `"ridge"` and `"mgps"` are alternatives, the latter letting the
-  effective rank emerge from the posterior under a generous rank ceiling.
+````{r graph, eval = FALSE}
+sel <- select_graph(fit, alpha = 0.1, beta = 0.85)
+sum(sel$P) / 2   # number of edges
+sel$pFDR         # realized FDR
+````
+
+## Choosing settings
+
+| Setting | Guidance |
+|---|---|
+| `rank` | `"full"` when $T > p$; a small integer (2–3) when $T \approx p$ or $T < p$ |
+| `k` | number of precision factors; pick by held-out prediction, plateaus once large enough |
+| `prior_B` | `"dl"` (default) shrinks the coefficients; `"ridge"` and `"mgps"` are alternatives for the reduced-rank case |
+````
+````
