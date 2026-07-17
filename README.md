@@ -15,6 +15,11 @@ coefficients. VAPOR updates the VAR coefficients and the precision matrix
 jointly, propagating uncertainty between them. This helps most when the VAR is
 hard to estimate: strong autocorrelation, small samples, or high dimension.
 
+When the number of series is close to the number of time points (T ~ p), the
+full VAR coefficient matrix is over-parameterized. VAPOR therefore also provides
+a **reduced-rank** parameterization of the dynamics, B = U V^T with a small rank
+r, which regularizes the dynamics and is the recommended choice in that regime.
+
 ## Installation
 
 ```r
@@ -41,6 +46,26 @@ fit$Omega                  # posterior mean precision matrix
 partial_correlations(fit)  # partial correlation matrix
 ```
 
+### Full-rank vs reduced-rank dynamics
+
+By default `rank = "full"`, which uses the full-rank sampler with a
+Dirichlet-Laplace prior on the VAR coefficients B. When T is close to p, set
+`rank` to a small integer to use the reduced-rank parameterization B = U V^T,
+which shrinks the dynamics and avoids overfitting:
+
+```r
+# reduced-rank dynamics (recommended when T is close to p)
+fit_rr <- vapor(Y, lags = 1, k = 2, rank = 3,
+                prior_B = "dl", nrun = 5000, burn = 2500, thin = 5)
+```
+
+`prior_B` controls the prior on the reduced-rank factor V: `"dl"` (default)
+applies Dirichlet-Laplace shrinkage, `"ridge"` a constant-variance Gaussian
+prior, and `"mgps"` a Multiplicative Gamma Process prior whose shrinkage
+increases with column index -- intended for use with a generous rank ceiling,
+letting the effective rank emerge from the posterior. `prior_B` is ignored when
+`rank = "full"`.
+
 ### Selecting a sparse graph
 
 `select_graph()` thresholds the precision matrix into a conditional independence
@@ -66,12 +91,16 @@ For a VAR(1):
 
 - y_t = B y_{t-1} + e_t,  e_t ~ N(0, Omega^{-1})
 - Omega = Lambda Lambda^T + Delta  (low-rank plus diagonal)
-- Dirichlet-Laplace prior on the rows of B (Kastner and Huber, 2020)
+- B is either full rank, with a Dirichlet-Laplace prior on its rows
+  (Kastner and Huber, 2020), or reduced rank, B = U V^T, with a
+  Dirichlet-Laplace, ridge, or Multiplicative Gamma Process prior on V
 - Dirichlet-Laplace prior on the loadings Lambda (Chandra, Müller, and Sarkar, 2026)
 - Dirichlet process prior on the diagonal Delta
 
 The sampler iterates three blocks: sample B given Omega, sample Omega given the
-VAR residuals, and update the Dirichlet process concentration.
+VAR residuals, and update the Dirichlet process concentration. Under the
+reduced-rank parameterization the first block samples U given V, then V given U,
+with the residuals e_t = y_t - U V^T y_{t-1} passed to the remaining blocks.
 
 ## Main functions
 
@@ -87,6 +116,11 @@ VAR residuals, and update the Dirichlet process concentration.
 
 - `lags`: VAR lag order (default 1)
 - `k`: number of precision factors (default 5)
+- `rank`: rank of the VAR coefficient matrix B. `"full"` (default) uses the
+  full-rank sampler; an integer `r <= min(p, lags*p)` uses the reduced-rank
+  parameterization B = U V^T
+- `prior_B`: prior on the reduced-rank factor V (`"dl"`, `"ridge"`, or
+  `"mgps"`); ignored when `rank = "full"`
 - `nrun`, `burn`, `thin`: MCMC controls
 - `jitter`: optional Gaussian jitter for numerical stability; chosen
   automatically if `NULL`
