@@ -10,3 +10,7 @@ Depends: R (>= 4.0.0)
 Imports: Rcpp, stats
 LinkingTo: Rcpp, RcppArmadillo, RcppProgress
 RoxygenNote: 7.3.3
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

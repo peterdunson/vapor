@@ -1,0 +1,151 @@
+---
+title: "Introduction to VAPOR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to VAPOR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 6, fig.height = 5)
+```
+
+## What VAPOR does
+
+VAPOR jointly estimates, in a single Gibbs sampler:
+
+- **B**, the VAR(1) coefficient matrix (the dynamics), and
+- **Omega**, the precision matrix of the innovations, modeled as a low-rank
+  plus diagonal factor structure (`Omega = Lambda Lambda' + Delta`).
+
+The two are estimated together: the coefficient update is GLS-transformed by the
+current precision, and the precision is estimated from the current residuals.
+This is aimed at the high-dimensional regime where the number of series `p` is
+close to the number of time points `T`, where a plain VAR overfits and the
+sample covariance is not invertible.
+
+```{r setup}
+library(VAPOR)
+set.seed(1)
+```
+
+## Simulate data
+
+We generate `T = 120` observations of `p = 40` series from a VAR(1) with a
+low-rank-plus-diagonal innovation precision, so we know the true `Omega`.
+
+```{r simulate}
+p <- 40; T <- 120; k_true <- 3
+
+# true innovation precision: Lambda Lambda' + diagonal
+Lambda_true <- matrix(rnorm(p * k_true, 0, 0.6), p, k_true)
+Delta_true  <- diag(runif(p, 0.5, 1.5))
+Omega_true  <- Lambda_true %*% t(Lambda_true) + Delta_true
+Sigma_true  <- solve(Omega_true)
+
+# true VAR(1) dynamics: a stable, mildly persistent B
+B_true <- matrix(rnorm(p * p, 0, 0.03), p, p); diag(B_true) <- 0.3
+
+# simulate
+chol_S <- chol(Sigma_true)
+Y <- matrix(0, T, p)
+for (t in 2:T) {
+   eps <- as.numeric(crossprod(chol_S, rnorm(p)))
+   Y[t, ] <- B_true %*% Y[t-1, ] + eps
+}
+Y <- scale(Y)
+dim(Y)
+```
+
+## Fit VAPOR
+
+The main entry point is `vapor()`. For `T` close to `p`, use the reduced-rank
+parameterization (`rank = r`) with the default Dirichlet-Laplace prior on the
+VAR coefficients. `k` is the number of precision factors.
+
+```{r fit}
+fit <- vapor(Y, lags = 1, k = 5, rank = 3,
+             nrun = 3000, burn = 1500, thin = 5, seed = 1)
+fit
+```
+
+The returned object contains posterior draws and the posterior-mean precision:
+
+```{r structure}
+str(fit, max.level = 1)
+```
+
+Key components:
+
+- `fit$Omega` -- the `p x p` posterior-mean innovation precision matrix.
+- `fit$B` -- a `p x p x n_draws` array of VAR coefficient draws.
+- `fit$Lambda` -- the factor-loading draws.
+- `fit$dims`, `fit$settings` -- dimensions and sampler settings.
+
+## Recover the precision matrix
+
+The posterior-mean precision is in `fit$Omega`. We compare it to the truth.
+
+```{r omega}
+Omega_hat <- fit$Omega
+
+# Frobenius distance to the truth
+frob <- sqrt(sum((Omega_hat - Omega_true)^2))
+cat(sprintf("Frobenius ||Omega_hat - Omega_true|| = %.2f\n", frob))
+```
+
+```{r omega-heatmap, fig.width = 8, fig.height = 4}
+op <- par(mfrow = c(1, 2), mar = c(2,2,2,1))
+image(Omega_true[, p:1], main = "True Omega",  axes = FALSE, col = hcl.colors(50, "Blue-Red"))
+image(Omega_hat[, p:1],  main = "VAPOR Omega", axes = FALSE, col = hcl.colors(50, "Blue-Red"))
+par(op)
+```
+
+## Extract the VAR coefficients
+
+The posterior-mean `B` (the dynamics) is obtained by averaging the draws.
+
+```{r coef}
+B_hat <- apply(fit$B, c(1, 2), mean)
+dim(B_hat)
+
+# one-step-ahead forecast from the last observation
+y_last <- Y[nrow(Y), ]
+y_forecast <- as.numeric(B_hat %*% y_last)
+head(y_forecast)
+```
+
+## Nowcasting: borrowing strength across series
+
+VAPOR's precision matrix can reconstruct a held-out subset of series from the
+observed ones in the same period, via the Gaussian conditional mean
+`y_hidden = -Omega_hh^{-1} Omega_ho y_observed`. This uses only `Omega`.
+
+```{r nowcast}
+Omega <- fit$Omega
+nowcast <- function(Omega, y_obs, obs, hid)
+   as.numeric(-solve(Omega[hid, hid]) %*% Omega[hid, obs] %*% y_obs)
+
+# hide 30% of series in the last period, predict from the rest
+set.seed(2)
+hid <- sort(sample(p, floor(0.3 * p)))
+obs <- setdiff(seq_len(p), hid)
+y   <- Y[nrow(Y), ]
+
+pred <- nowcast(Omega, y[obs], obs, hid)
+mspe <- mean((y[hid] - pred)^2)
+cat(sprintf("Nowcast MSPE on held-out series: %.3f\n", mspe))
+```
+
+## Notes on usage
+
+- **Rank.** Use `rank = "full"` when `T` comfortably exceeds `p`; use a small
+  integer `rank` (e.g. 2--5) when `T` is close to `p`, where the full VAR
+  overfits.
+- **k (factors).** The number of precision factors. Choose by held-out
+  prediction; performance typically plateaus once `k` is large enough to
+  capture the dominant factors.
+- **Priors on B.** `prior_B = "dl"` (default) applies Dirichlet-Laplace
+  shrinkage; `"ridge"` and `"mgps"` are alternatives, the latter letting the
+  effective rank emerge from the posterior under a generous rank ceiling.
