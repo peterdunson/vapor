@@ -524,6 +524,8 @@ Rcpp::List var_precision_sampler(
    arma::mat   ps_mat(n_mc, p, fill::zeros);
    arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
    arma::mat   loglik_mc(Teff, n_mc, fill::zeros);
+   arma::vec   dir_prec_mc(n_mc, fill::zeros);
+   arma::vec   nclust_mc(n_mc, fill::zeros);
    
    Progress prog(nrun, true);
    
@@ -664,6 +666,8 @@ Rcpp::List var_precision_sampler(
             ps_mat.row(q)      = ps.t();
             B_mc.slice(q)      = B;
             loglik_mc.col(q)   = obs_loglik(phimat, ps, E);
+            dir_prec_mc(q)     = dir_prec;
+            nclust_mc(q)       = (double)sum(nj_val > 0);
          }
    }
    
@@ -673,7 +677,9 @@ Rcpp::List var_precision_sampler(
       Rcpp::Named("Lambda")    = Lambda_mc,
       Rcpp::Named("residuals") = ps_mat,
       Rcpp::Named("B")         = B_mc,
-      Rcpp::Named("loglik")    = loglik_mc
+      Rcpp::Named("loglik")    = loglik_mc,
+      Rcpp::Named("dir_prec")  = dir_prec_mc,
+      Rcpp::Named("nclust")    = nclust_mc
    );
 }
 
@@ -768,6 +774,8 @@ Rcpp::List var_precision_sampler_rr(
    arma::cube  U_mc(p,  r, n_mc, fill::zeros);
    arma::cube  V_mc(Kx, r, n_mc, fill::zeros);
    arma::mat   loglik_mc(Teff, n_mc, fill::zeros);
+   arma::vec   dir_prec_mc(n_mc, fill::zeros);
+   arma::vec   nclust_mc(n_mc, fill::zeros);
    
    Progress prog(nrun, true);
    
@@ -919,6 +927,8 @@ Rcpp::List var_precision_sampler_rr(
             U_mc.slice(q)      = U;
             V_mc.slice(q)      = V;
             loglik_mc.col(q)   = obs_loglik(phimat, ps, E);
+            dir_prec_mc(q)     = dir_prec;
+            nclust_mc(q)       = (double)sum(nj_val > 0);
          }
    }
    
@@ -932,6 +942,8 @@ Rcpp::List var_precision_sampler_rr(
       Rcpp::Named("V")         = V_mc,
       Rcpp::Named("rank")      = (int)r,
       Rcpp::Named("prior_B")   = prior_B,
-      Rcpp::Named("loglik")    = loglik_mc
+      Rcpp::Named("loglik")    = loglik_mc,
+      Rcpp::Named("dir_prec")  = dir_prec_mc,
+      Rcpp::Named("nclust")    = nclust_mc
    );
 }

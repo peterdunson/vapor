@@ -86,10 +86,12 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    n_mc <- dim(res$Lambda)[3]
    keep <- seq.int(floor(burn / thin) + 1L, n_mc)
    
-   Lambda <- res$Lambda[, , keep, drop = FALSE]
-   ps     <- res$residuals[keep, , drop = FALSE]
-   B      <- res$B[, , keep, drop = FALSE]
-   loglik <- res$loglik[, keep, drop = FALSE]
+   Lambda   <- res$Lambda[, , keep, drop = FALSE]
+   ps       <- res$residuals[keep, , drop = FALSE]
+   B        <- res$B[, , keep, drop = FALSE]
+   loglik   <- res$loglik[, keep, drop = FALSE]
+   dir_prec <- res$dir_prec[keep]
+   nclust   <- res$nclust[keep]
    
    V_kept   <- NULL
    if (!identical(rank, "full")) {
@@ -100,6 +102,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    
    out <- list(Lambda = Lambda, residual_prec = ps, B = B, Omega = Omega,
                V = V_kept, loglik = loglik,
+               dir_prec = dir_prec, nclust = nclust,
                dims = list(T = T_obs, p = p, k = k, lags = lags,
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
