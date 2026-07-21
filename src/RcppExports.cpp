@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // var_precision_sampler
-Rcpp::List var_precision_sampler(const arma::mat& Y, const int lags, const int k, const int nrun, const int burn, const int thin, const double a_L, const double b_L, const double a_B, const double b_B, const double as, const double bs, const double a_dir, const double b_dir);
-RcppExport SEXP _VAPOR_var_precision_sampler(SEXP YSEXP, SEXP lagsSEXP, SEXP kSEXP, SEXP nrunSEXP, SEXP burnSEXP, SEXP thinSEXP, SEXP a_LSEXP, SEXP b_LSEXP, SEXP a_BSEXP, SEXP b_BSEXP, SEXP asSEXP, SEXP bsSEXP, SEXP a_dirSEXP, SEXP b_dirSEXP) {
+Rcpp::List var_precision_sampler(const arma::mat& Y, const int lags, const int k, const int nrun, const int burn, const int thin, const double a_L, const double b_L, const double a_B, const double b_B, const double as, const double bs, const double a_dir, const double b_dir, const std::string dp_prior, const double sg_a, const double sg_b, const double sg_m);
+RcppExport SEXP _VAPOR_var_precision_sampler(SEXP YSEXP, SEXP lagsSEXP, SEXP kSEXP, SEXP nrunSEXP, SEXP burnSEXP, SEXP thinSEXP, SEXP a_LSEXP, SEXP b_LSEXP, SEXP a_BSEXP, SEXP b_BSEXP, SEXP asSEXP, SEXP bsSEXP, SEXP a_dirSEXP, SEXP b_dirSEXP, SEXP dp_priorSEXP, SEXP sg_aSEXP, SEXP sg_bSEXP, SEXP sg_mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,13 +31,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type bs(bsSEXP);
     Rcpp::traits::input_parameter< const double >::type a_dir(a_dirSEXP);
     Rcpp::traits::input_parameter< const double >::type b_dir(b_dirSEXP);
-    rcpp_result_gen = Rcpp::wrap(var_precision_sampler(Y, lags, k, nrun, burn, thin, a_L, b_L, a_B, b_B, as, bs, a_dir, b_dir));
+    Rcpp::traits::input_parameter< const std::string >::type dp_prior(dp_priorSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_a(sg_aSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_b(sg_bSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_m(sg_mSEXP);
+    rcpp_result_gen = Rcpp::wrap(var_precision_sampler(Y, lags, k, nrun, burn, thin, a_L, b_L, a_B, b_B, as, bs, a_dir, b_dir, dp_prior, sg_a, sg_b, sg_m));
     return rcpp_result_gen;
 END_RCPP
 }
 // var_precision_sampler_rr
-Rcpp::List var_precision_sampler_rr(const arma::mat& Y, const int lags, const int k, const int rank, const int nrun, const int burn, const int thin, const double a_L, const double b_L, const std::string prior_B, const double s_U2, const double s_V2, const double a_V, const double b_V, const double as, const double bs, const double a_dir, const double b_dir);
-RcppExport SEXP _VAPOR_var_precision_sampler_rr(SEXP YSEXP, SEXP lagsSEXP, SEXP kSEXP, SEXP rankSEXP, SEXP nrunSEXP, SEXP burnSEXP, SEXP thinSEXP, SEXP a_LSEXP, SEXP b_LSEXP, SEXP prior_BSEXP, SEXP s_U2SEXP, SEXP s_V2SEXP, SEXP a_VSEXP, SEXP b_VSEXP, SEXP asSEXP, SEXP bsSEXP, SEXP a_dirSEXP, SEXP b_dirSEXP) {
+Rcpp::List var_precision_sampler_rr(const arma::mat& Y, const int lags, const int k, const int rank, const int nrun, const int burn, const int thin, const double a_L, const double b_L, const std::string prior_B, const double s_U2, const double s_V2, const double a_V, const double b_V, const double as, const double bs, const double a_dir, const double b_dir, const std::string dp_prior, const double sg_a, const double sg_b, const double sg_m);
+RcppExport SEXP _VAPOR_var_precision_sampler_rr(SEXP YSEXP, SEXP lagsSEXP, SEXP kSEXP, SEXP rankSEXP, SEXP nrunSEXP, SEXP burnSEXP, SEXP thinSEXP, SEXP a_LSEXP, SEXP b_LSEXP, SEXP prior_BSEXP, SEXP s_U2SEXP, SEXP s_V2SEXP, SEXP a_VSEXP, SEXP b_VSEXP, SEXP asSEXP, SEXP bsSEXP, SEXP a_dirSEXP, SEXP b_dirSEXP, SEXP dp_priorSEXP, SEXP sg_aSEXP, SEXP sg_bSEXP, SEXP sg_mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -59,14 +63,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type bs(bsSEXP);
     Rcpp::traits::input_parameter< const double >::type a_dir(a_dirSEXP);
     Rcpp::traits::input_parameter< const double >::type b_dir(b_dirSEXP);
-    rcpp_result_gen = Rcpp::wrap(var_precision_sampler_rr(Y, lags, k, rank, nrun, burn, thin, a_L, b_L, prior_B, s_U2, s_V2, a_V, b_V, as, bs, a_dir, b_dir));
+    Rcpp::traits::input_parameter< const std::string >::type dp_prior(dp_priorSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_a(sg_aSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_b(sg_bSEXP);
+    Rcpp::traits::input_parameter< const double >::type sg_m(sg_mSEXP);
+    rcpp_result_gen = Rcpp::wrap(var_precision_sampler_rr(Y, lags, k, rank, nrun, burn, thin, a_L, b_L, prior_B, s_U2, s_V2, a_V, b_V, as, bs, a_dir, b_dir, dp_prior, sg_a, sg_b, sg_m));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_VAPOR_var_precision_sampler", (DL_FUNC) &_VAPOR_var_precision_sampler, 14},
-    {"_VAPOR_var_precision_sampler_rr", (DL_FUNC) &_VAPOR_var_precision_sampler_rr, 18},
+    {"_VAPOR_var_precision_sampler", (DL_FUNC) &_VAPOR_var_precision_sampler, 18},
+    {"_VAPOR_var_precision_sampler_rr", (DL_FUNC) &_VAPOR_var_precision_sampler_rr, 22},
     {NULL, NULL, 0}
 };
 

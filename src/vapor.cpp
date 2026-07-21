@@ -376,6 +376,61 @@ void sample_V(arma::mat &V, const arma::mat &U, const arma::mat &Ymat,
 //  DP RESIDUAL VARIANCE UPDATE (shared, unchanged)
 // ============================================================================
 
+// ── Stirling-gamma conjugate DP-concentration update (Zito et al. 2024) ──────
+// Posterior log-density of alpha under a Stirling-gamma(a,b,m) prior, given
+// k clusters in n observations (up to a constant).
+static inline double log_pdf_Sg_post(double x, double a, double b, double m,
+                                     double k, double n) {
+   return (a + k - 1.0) * std::log(x)
+   - b * (std::lgamma(x + m) - std::lgamma(x))
+   -      (std::lgamma(x + n) - std::lgamma(x));
+}
+
+// Newton mode-finder for the ratio-of-uniforms bounds. `extra2logx` adds the
+// +2log(x) term (for Mv). Returns the maximised log-value; guards keep x>0 and
+// cap iterations. dgrad uses R::digamma for the psi terms.
+static inline double sg_bound(double a, double b, double m, double k, double n,
+                              bool extra2logx) {
+   double x = 1.0;
+   for (int it = 0; it < 50; ++it) {
+      double g = -(a + k - 1.0) / x
+      + b * (R::digamma(x + m) - R::digamma(x))
+      +     (R::digamma(x + n) - R::digamma(x));
+      double h =  (a + k - 1.0) / (x * x)
+         + b * (R::trigamma(x + m) - R::trigamma(x))
+         +     (R::trigamma(x + n) - R::trigamma(x));
+         if (extra2logx) { g += 2.0 / x; h += -2.0 / (x * x); }
+         // maximise: Newton on the gradient of (neg log-dens). h is d/dx of -g here.
+         if (std::fabs(h) < 1e-12) break;
+         double step = g / h;
+         double xn = x - step;
+         if (xn <= 1e-10 || !std::isfinite(xn)) xn = x / 2.0;
+         if (std::fabs(xn - x) < 1e-8) { x = xn; break; }
+         x = xn;
+   }
+   double val = log_pdf_Sg_post(x, a, b, m, k, n);
+   if (extra2logx) val += 2.0 * std::log(x);
+   return val;
+}
+
+// One draw from the Stirling-gamma posterior via ratio-of-uniforms, with a
+// max-tries cap. Returns -1.0 on failure so the caller can fall back.
+static inline double rSg_posterior_draw(double a, double b, double m,
+                                        double k, double n) {
+   double Mu = sg_bound(a, b, m, k, n, false);
+   double Mv = sg_bound(a, b, m, k, n, true);
+   double s  = std::exp(0.5 * (Mv - Mu));
+   for (int tries = 0; tries < 100000; ++tries) {
+      double u = unif_rand();
+      double v = unif_rand();
+      if (u <= 0.0) continue;
+      double x = s * v / u;
+      if (std::log(u) < 0.5 * (log_pdf_Sg_post(x, a, b, m, k, n) - Mu))
+         return x;
+   }
+   return -1.0;  // failed; caller falls back to Escobar-West
+}
+
 double update_dir_prec(double alpha, double a, double b, unsigned n, unsigned k) {
    double phi  = R::rbeta(alpha+1., (double)n);
    double gam1 = a + k, gam2 = b - log(phi);
@@ -388,6 +443,26 @@ double update_dir_prec(double alpha, double a, double b, unsigned n, unsigned k)
 // ============================================================================
 //  FULL-RANK SAMPLER (original, unchanged)
 // ============================================================================
+
+// Per-observation Gaussian log-likelihood for the current draw.
+// Omega = phimat phimat^T + diag(ps); E is the Teff x p residual matrix
+// (rows e_t = y_t - B y_{t-1}). Returns a length-Teff vec of log p(y_t | .).
+arma::vec obs_loglik(const arma::mat &phimat, const arma::vec &ps,
+                     const arma::mat &E) {
+   const unsigned p    = phimat.n_rows;
+   const unsigned Teff = E.n_rows;
+   arma::mat Omega = phimat * phimat.t();
+   Omega.diag() += ps;
+   arma::mat R;
+   if (!arma::chol(R, Omega)) {           // upper Cholesky; R^T R = Omega
+      return arma::vec(Teff, fill::value(-1e10));
+   }
+   double logdet = 2.0 * arma::sum(arma::log(R.diag()));
+   arma::mat Z = E * R.t();               // each row z_t, quad_t = z_t . z_t
+   arma::vec quad = arma::sum(arma::square(Z), 1);
+   double c = 0.5 * logdet - 0.5 * (double)p * std::log(2.0 * M_PI);
+   return c - 0.5 * quad;
+}
 
 // [[Rcpp::export]]
 Rcpp::List var_precision_sampler(
@@ -404,8 +479,14 @@ Rcpp::List var_precision_sampler(
       const double as   = 0.1,
       const double bs   = 0.1,
       const double a_dir= 0.1,
-      const double b_dir= 0.1
+      const double b_dir= 0.1,
+      const std::string dp_prior = "escobar_west",
+      const double sg_a = 3.0,
+      const double sg_b = 1.0,
+      const double sg_m = 0.0
 ) {
+   const bool use_sg = (dp_prior == "stirling_gamma");
+   const double sg_m_eff = (sg_m > 0.0) ? sg_m : (double)Y.n_cols;
    const unsigned T = Y.n_rows;
    const unsigned p = Y.n_cols;
    const unsigned Teff = T - lags;
@@ -442,6 +523,7 @@ Rcpp::List var_precision_sampler(
    arma::cube  Lambda_mc(p, k, n_mc, fill::zeros);
    arma::mat   ps_mat(n_mc, p, fill::zeros);
    arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
+   arma::mat   loglik_mc(Teff, n_mc, fill::zeros);
    
    Progress prog(nrun, true);
    
@@ -561,8 +643,18 @@ Rcpp::List var_precision_sampler(
                ps(inds_eq_j[j]).fill(atom);
             } else inds_eq_j[j].reset();
          }
-         dir_prec   = update_dir_prec(dir_prec, a_dir, b_dir, p,
-                                      (unsigned)sum(nj_val > 0));
+         {
+            unsigned n_clust = (unsigned)sum(nj_val > 0);
+            double a_sg = std::max((unsigned)1, n_clust);
+            if (use_sg) {
+               double draw = rSg_posterior_draw(sg_a, sg_b, sg_m_eff,
+                                                (double)a_sg, (double)p);
+               dir_prec = (draw > 0.0) ? draw
+               : update_dir_prec(dir_prec, a_dir, b_dir, p, n_clust);
+            } else {
+               dir_prec = update_dir_prec(dir_prec, a_dir, b_dir, p, n_clust);
+            }
+         }
          prob_empty = log(dir_prec);
          
          int rem = (i+1) % thin;
@@ -571,6 +663,7 @@ Rcpp::List var_precision_sampler(
             Lambda_mc.slice(q) = phimat;
             ps_mat.row(q)      = ps.t();
             B_mc.slice(q)      = B;
+            loglik_mc.col(q)   = obs_loglik(phimat, ps, E);
          }
    }
    
@@ -579,7 +672,8 @@ Rcpp::List var_precision_sampler(
    return Rcpp::List::create(
       Rcpp::Named("Lambda")    = Lambda_mc,
       Rcpp::Named("residuals") = ps_mat,
-      Rcpp::Named("B")         = B_mc
+      Rcpp::Named("B")         = B_mc,
+      Rcpp::Named("loglik")    = loglik_mc
    );
 }
 
@@ -611,8 +705,14 @@ Rcpp::List var_precision_sampler_rr(
       const double as      = 0.1,
       const double bs      = 0.1,
       const double a_dir   = 0.1,
-      const double b_dir   = 0.1
+      const double b_dir   = 0.1,
+      const std::string dp_prior = "escobar_west",
+      const double sg_a = 3.0,
+      const double sg_b = 1.0,
+      const double sg_m = 0.0
 ) {
+   const bool use_sg = (dp_prior == "stirling_gamma");
+   const double sg_m_eff = (sg_m > 0.0) ? sg_m : (double)Y.n_cols;
    const bool use_dl  = (prior_B == "dl");
    if (!use_dl && prior_B != "ridge")
       Rcpp::stop("prior_B must be 'ridge' or 'dl'");
@@ -667,6 +767,7 @@ Rcpp::List var_precision_sampler_rr(
    arma::cube  B_mc(p, Kx, n_mc, fill::zeros);
    arma::cube  U_mc(p,  r, n_mc, fill::zeros);
    arma::cube  V_mc(Kx, r, n_mc, fill::zeros);
+   arma::mat   loglik_mc(Teff, n_mc, fill::zeros);
    
    Progress prog(nrun, true);
    
@@ -795,8 +896,18 @@ Rcpp::List var_precision_sampler_rr(
                ps(inds_eq_j[j]).fill(atom);
             } else inds_eq_j[j].reset();
          }
-         dir_prec   = update_dir_prec(dir_prec, a_dir, b_dir, p,
-                                      (unsigned)sum(nj_val > 0));
+         {
+            unsigned n_clust = (unsigned)sum(nj_val > 0);
+            double a_sg = std::max((unsigned)1, n_clust);
+            if (use_sg) {
+               double draw = rSg_posterior_draw(sg_a, sg_b, sg_m_eff,
+                                                (double)a_sg, (double)p);
+               dir_prec = (draw > 0.0) ? draw
+               : update_dir_prec(dir_prec, a_dir, b_dir, p, n_clust);
+            } else {
+               dir_prec = update_dir_prec(dir_prec, a_dir, b_dir, p, n_clust);
+            }
+         }
          prob_empty = log(dir_prec);
          
          int rem = (i+1) % thin;
@@ -807,6 +918,7 @@ Rcpp::List var_precision_sampler_rr(
             B_mc.slice(q)      = B;
             U_mc.slice(q)      = U;
             V_mc.slice(q)      = V;
+            loglik_mc.col(q)   = obs_loglik(phimat, ps, E);
          }
    }
    
@@ -819,6 +931,7 @@ Rcpp::List var_precision_sampler_rr(
       Rcpp::Named("U")         = U_mc,
       Rcpp::Named("V")         = V_mc,
       Rcpp::Named("rank")      = (int)r,
-      Rcpp::Named("prior_B")   = prior_B
+      Rcpp::Named("prior_B")   = prior_B,
+      Rcpp::Named("loglik")    = loglik_mc
    );
 }

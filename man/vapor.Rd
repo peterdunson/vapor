@@ -23,6 +23,10 @@ vapor(
   bs = 0.1,
   a_dir = 0.1,
   b_dir = 0.1,
+  dp_prior = c("escobar_west", "stirling_gamma"),
+  sg_a = 3,
+  sg_b = 1,
+  sg_m = 0,
   jitter = NULL,
   seed = NULL
 )

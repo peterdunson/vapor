@@ -34,6 +34,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
                   prior_B = c("dl", "ridge"),
                   s_U2 = 1.0, s_V2 = 1.0,
                   as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1,
+                  dp_prior = c("escobar_west", "stirling_gamma"),
+                  sg_a = 3.0, sg_b = 1.0, sg_m = 0,
                   jitter = NULL, seed = NULL) {
    
    Y <- as.matrix(Y)
@@ -42,6 +44,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    if (burn >= nrun)        stop("`burn` must be less than `nrun`.")
    
    prior_B <- match.arg(prior_B)
+   dp_prior <- match.arg(dp_prior)
    
    p <- ncol(Y); T_obs <- nrow(Y)
    if (!is.null(seed)) set.seed(seed)
@@ -55,7 +58,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
          Y = Y, lags = as.integer(lags), k = as.integer(k),
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
          a_L = a_L, b_L = b_L, a_B = a_B, b_B = b_B,
-         as = as, bs = bs, a_dir = a_dir, b_dir = b_dir
+         as = as, bs = bs, a_dir = a_dir, b_dir = b_dir,
+         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m
       )
       rank_used <- "full"
       
@@ -72,7 +76,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
          a_L = a_L, b_L = b_L, prior_B = prior_B,
          s_U2 = s_U2, s_V2 = s_V2, a_V = a_B, b_V = b_B,
-         as = as, bs = bs, a_dir = a_dir, b_dir = b_dir
+         as = as, bs = bs, a_dir = a_dir, b_dir = b_dir,
+         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m
       )
       rank_used <- as.integer(rank)
    }
@@ -84,6 +89,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    Lambda <- res$Lambda[, , keep, drop = FALSE]
    ps     <- res$residuals[keep, , drop = FALSE]
    B      <- res$B[, , keep, drop = FALSE]
+   loglik <- res$loglik[, keep, drop = FALSE]
    
    V_kept   <- NULL
    if (!identical(rank, "full")) {
@@ -93,7 +99,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    Omega <- posterior_mean_omega(Lambda, ps)
    
    out <- list(Lambda = Lambda, residual_prec = ps, B = B, Omega = Omega,
-               V = V_kept,
+               V = V_kept, loglik = loglik,
                dims = list(T = T_obs, p = p, k = k, lags = lags,
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
