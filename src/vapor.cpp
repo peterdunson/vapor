@@ -483,7 +483,9 @@ Rcpp::List var_precision_sampler(
       const std::string dp_prior = "escobar_west",
       const double sg_a = 3.0,
       const double sg_b = 1.0,
-      const double sg_m = 0.0
+      const double sg_m = 0.0,
+      Rcpp::Nullable<Rcpp::NumericMatrix> Lambda_init = R_NilValue,
+      Rcpp::Nullable<Rcpp::NumericVector> delta_init  = R_NilValue
 ) {
    const bool use_sg = (dp_prior == "stirling_gamma");
    const double sg_m_eff = (sg_m > 0.0) ? sg_m : (double)Y.n_cols;
@@ -506,6 +508,11 @@ Rcpp::List var_precision_sampler(
    arma::vec tau_B(p, fill::value(0.5));
    
    arma::mat phimat(p, k, fill::randn);
+   if (Lambda_init.isNotNull()) {
+      arma::mat L0 = Rcpp::as<arma::mat>(Rcpp::NumericMatrix(Lambda_init));
+      if (L0.n_rows == p && L0.n_cols == (unsigned)k) phimat = L0;
+      else Rcpp::warning("Lambda_init has wrong dimensions; using random init.");
+   }
    arma::mat T_phi  = randg<arma::mat>(p, k, distr_param(a_L, 0.5));
    T_phi.transform([](double v){ return GSL_MAX_DBL(v, 9e-17); });
    arma::mat Plam   = 1. / (1. + square(T_phi));
@@ -518,6 +525,11 @@ Rcpp::List var_precision_sampler(
    arma::Col<int> d;
    arma::uvec *inds_eq_j = new arma::uvec[nmix];
    arma::vec ps(p, fill::ones);
+   if (delta_init.isNotNull()) {
+      arma::vec d0 = Rcpp::as<arma::vec>(Rcpp::NumericVector(delta_init));
+      if (d0.n_elem == p) ps = arma::clamp(d0, 1e-8, arma::datum::inf);
+      else Rcpp::warning("delta_init has wrong length; using default init.");
+   }
    
    const unsigned n_mc = (unsigned)std::floor((double)nrun / thin);
    arma::cube  Lambda_mc(p, k, n_mc, fill::zeros);
@@ -715,7 +727,10 @@ Rcpp::List var_precision_sampler_rr(
       const std::string dp_prior = "escobar_west",
       const double sg_a = 3.0,
       const double sg_b = 1.0,
-      const double sg_m = 0.0
+      const double sg_m = 0.0,
+      Rcpp::Nullable<Rcpp::NumericMatrix> Lambda_init = R_NilValue,
+      Rcpp::Nullable<Rcpp::NumericVector> delta_init  = R_NilValue,
+      Rcpp::Nullable<Rcpp::NumericMatrix> V_init      = R_NilValue
 ) {
    const bool use_sg = (dp_prior == "stirling_gamma");
    const double sg_m_eff = (sg_m > 0.0) ? sg_m : (double)Y.n_cols;
@@ -742,6 +757,11 @@ Rcpp::List var_precision_sampler_rr(
    
    arma::mat U(p,  r, fill::randn);  U *= 0.1;
    arma::mat V(Kx, r, fill::randn);  V *= 0.1;
+   if (V_init.isNotNull()) {
+      arma::mat V0 = Rcpp::as<arma::mat>(Rcpp::NumericMatrix(V_init));
+      if (V0.n_rows == Kx && V0.n_cols == r) V = V0;
+      else Rcpp::warning("V_init has wrong dimensions; using random init.");
+   }
    
    // -- DL state for V, only used if prior_B == "dl" --------------------------
    const double a_V_eff = 1.0 / (double)(Kx * r);   // analogous to a_B_eff
@@ -754,6 +774,11 @@ Rcpp::List var_precision_sampler_rr(
    arma::mat ridge_mat_V(Kx, r, fill::value(s_V2));
    
    arma::mat phimat(p, k, fill::randn);
+   if (Lambda_init.isNotNull()) {
+      arma::mat L0 = Rcpp::as<arma::mat>(Rcpp::NumericMatrix(Lambda_init));
+      if (L0.n_rows == p && L0.n_cols == (unsigned)k) phimat = L0;
+      else Rcpp::warning("Lambda_init has wrong dimensions; using random init.");
+   }
    arma::mat T_phi  = randg<arma::mat>(p, k, distr_param(a_L, 0.5));
    T_phi.transform([](double v){ return GSL_MAX_DBL(v, 9e-17); });
    arma::mat Plam   = 1. / (1. + square(T_phi));
@@ -766,6 +791,11 @@ Rcpp::List var_precision_sampler_rr(
    arma::Col<int> d;
    arma::uvec *inds_eq_j = new arma::uvec[nmix];
    arma::vec ps(p, fill::ones);
+   if (delta_init.isNotNull()) {
+      arma::vec d0 = Rcpp::as<arma::vec>(Rcpp::NumericVector(delta_init));
+      if (d0.n_elem == p) ps = arma::clamp(d0, 1e-8, arma::datum::inf);
+      else Rcpp::warning("delta_init has wrong length; using default init.");
+   }
    
    const unsigned n_mc = (unsigned)std::floor((double)nrun / thin);
    arma::cube  Lambda_mc(p, k, n_mc, fill::zeros);

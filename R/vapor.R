@@ -1,3 +1,64 @@
+#' Warm-start initial values for a VAPOR fit
+#'
+#' Builds starting values for Lambda, Delta, and (reduced-rank only) V from a
+#' fast ridge-VAR point estimate and a shrunk residual covariance. Values are
+#' perturbed so that chains started from different seeds remain dispersed,
+#' keeping between-chain convergence diagnostics meaningful.
+#'
+#' @param Y Numeric T x p matrix (already jittered, as passed to the sampler).
+#' @param lags,k,rank As in \code{vapor}.
+#' @param ridge Ridge penalty for the VAR point estimate.
+#' @param shrink Shrinkage of the residual covariance toward a scaled identity.
+#' @param perturb Relative SD of the multiplicative perturbation.
+#' @return A list with elements Lambda, delta, and V (V is NULL for full rank).
+#' @export
+vapor_warm_start <- function(Y, lags = 1, k = 5, rank = "full",
+                             ridge = 1e-2, shrink = 0.2, perturb = 0.15) {
+   Y <- as.matrix(Y); T_obs <- nrow(Y); p <- ncol(Y); Teff <- T_obs - lags
+   
+   Ymat <- Y[(lags + 1):T_obs, , drop = FALSE]
+   X <- do.call(cbind, lapply(seq_len(lags),
+                              function(l) Y[(lags + 1 - l):(T_obs - l), , drop = FALSE]))
+   Kx <- ncol(X)
+   
+   # ridge VAR point estimate
+   Bhat <- t(solve(crossprod(X) + ridge * Teff * diag(Kx), crossprod(X, Ymat)))
+   E <- Ymat - X %*% t(Bhat)
+   
+   # shrunk residual covariance, inverted
+   S  <- crossprod(E) / Teff
+   S  <- (1 - shrink) * S + shrink * mean(diag(S)) * diag(p)
+   Om <- solve(S)
+   Om <- (Om + t(Om)) / 2
+   
+   # LRD split: Delta = half the diagonal, Lambda from top-k eigenpairs
+   delta <- 0.5 * diag(Om)
+   R  <- Om - diag(delta)
+   ev <- eigen(R, symmetric = TRUE)
+   kk <- min(k, sum(ev$values > 0))
+   Lambda <- matrix(0, p, k)
+   if (kk > 0)
+      Lambda[, seq_len(kk)] <- ev$vectors[, seq_len(kk), drop = FALSE] %*%
+      diag(sqrt(ev$values[seq_len(kk)]), kk)
+   
+   # reduced-rank V from the SVD of Bhat
+   Vinit <- NULL
+   if (!identical(rank, "full")) {
+      r  <- as.integer(rank)
+      sv <- svd(Bhat, nu = r, nv = r)
+      Vinit <- sv$v %*% diag(sqrt(sv$d[seq_len(r)]), r)
+   }
+   
+   # perturb so chains from different seeds start dispersed
+   pert <- function(M) M * (1 + perturb * matrix(stats::rnorm(length(M)),
+                                                 nrow(M), ncol(M)))
+   Lambda <- pert(Lambda)
+   if (!is.null(Vinit)) Vinit <- pert(Vinit)
+   delta  <- pmax(delta * (1 + perturb * stats::rnorm(p)), 1e-8)
+   
+   list(Lambda = Lambda, delta = delta, V = Vinit)
+}
+
 #' Fit a VAPOR model
 #'
 #' Joint Bayesian estimation of VAR dynamics and a sparse innovation precision
@@ -23,6 +84,16 @@
 #'   is numeric; s_V2 only applies when prior_B = "ridge".
 #' @param as,bs Dirichlet process base-measure shape/rate.
 #' @param a_dir,b_dir Dirichlet process concentration prior shape/rate.
+#' @param dp_prior Update for the DP concentration parameter.
+#'   `"escobar_west"` (default) uses the auxiliary-variable scheme;
+#'   `"stirling_gamma"` uses the conjugate Stirling-gamma prior.
+#' @param sg_a,sg_b,sg_m Stirling-gamma hyperparameters. Only used when
+#'   dp_prior = "stirling_gamma"; sg_m = 0 defaults to p.
+#' @param init Initialization scheme. `"warm"` (default) starts Lambda,
+#'   Delta, and V from a fast ridge-VAR point estimate, perturbed per seed;
+#'   `"random"` uses the sampler's internal random initialization.
+#' @param init_perturb Relative SD of the warm-start perturbation. Larger
+#'   values disperse chains further, keeping Gelman-Rubin diagnostics honest.
 #' @param jitter SD of Gaussian jitter for stability; NULL picks automatically.
 #' @param seed Optional integer seed.
 #' @return An object of class "vapor".
@@ -36,6 +107,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
                   as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1,
                   dp_prior = c("escobar_west", "stirling_gamma"),
                   sg_a = 3.0, sg_b = 1.0, sg_m = 0,
+                  init = c("random", "warm"), init_perturb = 0.15,
                   jitter = NULL, seed = NULL) {
    
    Y <- as.matrix(Y)
@@ -43,14 +115,19 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    if (anyNA(Y))            stop("`Y` contains missing values.")
    if (burn >= nrun)        stop("`burn` must be less than `nrun`.")
    
-   prior_B <- match.arg(prior_B)
+   prior_B  <- match.arg(prior_B)
    dp_prior <- match.arg(dp_prior)
+   init     <- match.arg(init)
    
    p <- ncol(Y); T_obs <- nrow(Y)
    if (!is.null(seed)) set.seed(seed)
    
    if (is.null(jitter)) jitter <- if (T_obs / p < 5) 1e-3 else 1e-6
    if (jitter > 0) Y <- Y + matrix(stats::rnorm(T_obs * p, 0, jitter), T_obs, p)
+   
+   ws <- if (init == "warm")
+      vapor_warm_start(Y, lags = lags, k = k, rank = rank, perturb = init_perturb)
+   else list(Lambda = NULL, delta = NULL, V = NULL)
    
    if (identical(rank, "full")) {
       
@@ -59,7 +136,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
          a_L = a_L, b_L = b_L, a_B = a_B, b_B = b_B,
          as = as, bs = bs, a_dir = a_dir, b_dir = b_dir,
-         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m
+         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m,
+         Lambda_init = ws$Lambda, delta_init = ws$delta
       )
       rank_used <- "full"
       
@@ -77,7 +155,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
          a_L = a_L, b_L = b_L, prior_B = prior_B,
          s_U2 = s_U2, s_V2 = s_V2, a_V = a_B, b_V = b_B,
          as = as, bs = bs, a_dir = a_dir, b_dir = b_dir,
-         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m
+         dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m,
+         Lambda_init = ws$Lambda, delta_init = ws$delta, V_init = ws$V
       )
       rank_used <- as.integer(rank)
    }
@@ -107,7 +186,8 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
                                rank = rank_used,
-                               prior_B = if (identical(rank, "full")) "dl" else prior_B))
+                               prior_B = if (identical(rank, "full")) "dl" else prior_B,
+                               init = init, init_perturb = init_perturb))
    class(out) <- "vapor"
    out
 }

@@ -27,6 +27,8 @@ vapor(
   sg_a = 3,
   sg_b = 1,
   sg_m = 0,
+  init = c("warm", "random"),
+  init_perturb = 0.15,
   jitter = NULL,
   seed = NULL
 )
@@ -62,6 +64,20 @@ is numeric; s_V2 only applies when prior_B = "ridge".}
 \item{as, bs}{Dirichlet process base-measure shape/rate.}
 
 \item{a_dir, b_dir}{Dirichlet process concentration prior shape/rate.}
+
+\item{dp_prior}{Update for the DP concentration parameter.
+`"escobar_west"` (default) uses the auxiliary-variable scheme;
+`"stirling_gamma"` uses the conjugate Stirling-gamma prior.}
+
+\item{sg_a, sg_b, sg_m}{Stirling-gamma hyperparameters. Only used when
+dp_prior = "stirling_gamma"; sg_m = 0 defaults to p.}
+
+\item{init}{Initialization scheme. `"warm"` (default) starts Lambda,
+Delta, and V from a fast ridge-VAR point estimate, perturbed per seed;
+`"random"` uses the sampler's internal random initialization.}
+
+\item{init_perturb}{Relative SD of the warm-start perturbation. Larger
+values disperse chains further, keeping Gelman-Rubin diagnostics honest.}
 
 \item{jitter}{SD of Gaussian jitter for stability; NULL picks automatically.}
 
