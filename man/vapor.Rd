@@ -27,7 +27,7 @@ vapor(
   sg_a = 3,
   sg_b = 1,
   sg_m = 0,
-  init = c("warm", "random"),
+  init = c("random", "warm"),
   init_perturb = 0.15,
   jitter = NULL,
   seed = NULL
