@@ -26,15 +26,22 @@ make_jitter <- function(Y, seed) {
 }
 
 # ── Data generator ───────────────────────────────────────────────────────────
+#  At small p the 10% sparsity pattern can be acyclic, making B nilpotent with
+#  spectral radius 0; rescaling by target_radius/0 then yields Inf. Redraw B
+#  until the spectral radius is numerically positive.
 simulate_var1 <- function(T, p, target_radius=0.95, k=5,
                           pr=0.2, val=1.5, seed=NULL) {
    if (!is.null(seed)) set.seed(seed)
    lambda <- simulate_lambda_sparse(k, p, pr=pr, val=val)
    Omega  <- tcrossprod(lambda) + diag(p)
    Sigma  <- chol2inv(chol(Omega))
-   B      <- matrix(0, p, p)
-   B[sample(p^2, floor(0.1*p^2))] <- rnorm(floor(0.1*p^2), 0, 0.3)
-   sr     <- max(abs(eigen(B, only.values=TRUE)$values))
+   n_nz   <- floor(0.1*p^2)
+   repeat {
+      B  <- matrix(0, p, p)
+      B[sample(p^2, n_nz)] <- rnorm(n_nz, 0, 0.3)
+      sr <- max(abs(eigen(B, only.values=TRUE)$values))
+      if (is.finite(sr) && sr > 1e-8) break
+   }
    B      <- B * (target_radius / sr)
    Y      <- matrix(0, T, p)
    eps    <- MASS::mvrnorm(T, rep(0,p), Sigma)
