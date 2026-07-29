@@ -19,18 +19,29 @@ pal <- colorRampPalette(c("blue", "white", "red"))(100)
 lim_all <- 1
 brks    <- seq(-1, 1, length.out = 101)
 
+
 mk <- function(M, title, show_legend = FALSE) {
    M[M >  lim_all] <-  lim_all; M[M < -lim_all] <- -lim_all
-   pheatmap(M, main = title,
-            cluster_rows = FALSE, cluster_cols = FALSE,
-            color = pal, breaks = brks, na_col = "white",
-            border_color = NA,
-            show_rownames = FALSE, show_colnames = FALSE,
-            legend = show_legend,
-            legend_breaks = c(-1, 0, 1),
-            legend_labels = c("-1", "0", "1"),
-            silent = TRUE,
-            fontsize = 22)$gtable
+   gt <- pheatmap(M, main = title,
+                  cluster_rows = FALSE, cluster_cols = FALSE,
+                  color = pal, breaks = brks, na_col = "white",
+                  border_color = NA,
+                  show_rownames = FALSE, show_colnames = FALSE,
+                  legend = show_legend,
+                  legend_breaks = c(-1, 0, 1),
+                  legend_labels = c("-1", "0", "1"),
+                  silent = TRUE,
+                  fontsize = 22)$gtable
+   
+   # find the title grob and set it to plain weight
+   ti <- which(sapply(gt$grobs, function(g) "text" %in% class(g) && !is.null(g$label) &&
+                         any(g$label == title)))
+   if (length(ti)) {
+      gt$grobs[[ti[1]]]$gp$fontface <- NULL
+      gt$grobs[[ti[1]]]$gp$font <- 1L
+      gt$grobs[[ti[1]]]$gp$fontfamily <- "serif"
+   }
+   gt
 }
 
 show  <- c(FALSE, FALSE, FALSE, TRUE)
