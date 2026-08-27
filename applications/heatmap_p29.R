@@ -6,7 +6,7 @@
 # ============================================================================
 APP <- path.expand("~/Desktop/precision_factor/PrecFact/external_testing/var_prec/application")
 fit <- readRDS(file.path(APP, "p29_full_results.rds"))
-OUT <- file.path(APP, "heatmap_p29_fullrank_labeled.png")
+OUT <- file.path(APP, "heatmap_p29_r3k10.png")
 
 LAB_CEX <- 1.15          # raise or lower to taste
 

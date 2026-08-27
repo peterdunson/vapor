@@ -2,29 +2,23 @@
 #  VAPOR p=29 FRED-QD -- full rerun, REDUCED RANK (r = 3, k = 10)
 #
 #  EDGE RULE: an edge is reported when the central 95% posterior interval of
-#  the partial correlation excludes zero. This rule is used EVERYWHERE in this
-#  script -- reported edges, sensitivity, stability, the justification sweep,
-#  and the rank comparison -- so the paper applies one criterion at both
-#  dimensions. The pFDR procedure is not used for selection here.
+#  the partial correlation excludes zero. Edges are selected from the FOUR
+#  LONG CHAINS ONLY, so the reported graph and its Rhat come from the same
+#  posterior sample. The production fits are used for MSPE and timing only.
+#  The same rule is applied to sensitivity, stability, the justification
+#  sweep, and the rank comparison, so one criterion holds at both dimensions.
+#  The pFDR procedure is not used for selection here.
 #
-#  Other changes from the full-rank version:
-#   (0) Rank/k justification sweep reporting Pr(rho(B)>1), the posterior
-#       predictive check, and threshold counts against Kastner.
-#   (1) Reduced rank replaces full rank. Full rank puts 55-77% of posterior
-#       mass on explosive coefficient matrices and badly under-reproduces the
-#       leading eigenvalue of the correlation matrix.
-#   (2) KASTNER IS REFIT AT THE MATCHING FACTOR COUNT. Comparing VAPOR at
-#       k = 10 against Kastner fixed at 5 factors is not like-for-like; with
-#       both at k = 10, VAPOR is sparsest at every threshold. The paper must
-#       state that the factor counts are matched.
-#   (3) The posterior predictive check uses summaries of y_t, not of residuals
-#       formed with a point estimate of B, and reports nine statistics.
-#   (4) Held-out MSPE is averaged over several draws of the held-out sets; the
-#       single-draw number is also reported for comparability.
-#   (5) Diebold-Mariano comparisons are computed here rather than separately.
+#  SETTINGS MATCHED TO THE p=100 SCRIPT:
+#   - production fits: 7500 iterations, burn 2500, thin 5
+#   - long chains: 20000, burn 10000, thin 10 (THIN_L), so both dimensions
+#     retain 1000 draws per chain and the ESS figures are comparable
+#   - Kastner averaged over 3 fits
+#   - nrun sensitivity rows 5000 / 7500 / 15000
 #
-#  Output object keeps the same names as before, so the existing heatmap
-#  script works unchanged (only the output filename should be updated).
+#  The heatmap panel, the threshold counts, and the edge ranks all use the
+#  same pooled long-chain posterior mean (cs_all$pm), so colours and boxes in
+#  the figure come from one object.
 # ============================================================================
 library(VAPOR); library(PrecFact); library(bayesianVARs); library(glasso); library(coda)
 
@@ -34,7 +28,7 @@ RANK   <- 3
 K      <- 10         # VAPOR factor count; Kastner is fit at the same value
 R_REPS <- 3
 NRUN   <- 7500; BURN <- 2500; THIN <- 5
-NRUN_L <- 20000; BURN_L <- 10000
+NRUN_L <- 20000; BURN_L <- 10000; THIN_L <- 10
 JIT    <- 1e-3
 N_HID  <- 20         # held-out set replications
 RUN_JUSTIFICATION <- TRUE
@@ -67,8 +61,8 @@ train_idx <- which(date_vals >= 2000+(6-1)/12 & date_vals <= 2020+(12-1)/12)
 test_idx  <- which(date_vals >= 2021+(3-1)/12 & date_vals <= 2025+(12-1)/12)
 Y_all <- scale(Y_qd); Y_train <- Y_all[train_idx,]; Y_test <- Y_all[test_idx,]
 T_train <- nrow(Y_train); T_test <- nrow(Y_test); Y_last_train <- Y_train[T_train,]
-cat(sprintf("p=%d  T_train=%d  T/p=%.2f  T_test=%d | rank=%d k=%d\n",
-            p, T_train, T_train/p, T_test, RANK, K))
+cat(sprintf("p=%d  T_train=%d  T/p=%.2f  T_test=%d | rank=%d k=%d nrun=%d\n",
+            p, T_train, T_train/p, T_test, RANK, K, NRUN))
 
 # ---- shared helpers --------------------------------------------------------
 omega_one <- function(fit, s){ Om <- tcrossprod(fit$Lambda[,,s])
@@ -83,7 +77,7 @@ chol_sig <- function(Om){
    tryCatch(chol(Sig), error=function(e) chol(Sig + diag(1e-8,p))) }
 
 # ---- THE EDGE RULE: 95% credible interval excluding zero -------------------
-#  Accepts one fit or a list of fits; draws are pooled across fits.
+#  Accepts one fit or a list of fits; draws are pooled across the fits given.
 ci_set <- function(fits){
    if (!is.null(fits$Lambda)) fits <- list(fits)
    stk <- unlist(lapply(fits, function(f)
@@ -108,11 +102,11 @@ ci_names <- function(fits){
    sort(paste(vars_qd[pmin(ei[,1],ei[,2])], vars_qd[pmax(ei[,1],ei[,2])], sep="--")) }
 
 fit_vapor <- function(kk = K, rk = RANK, sd_i = SEED, nrun = NRUN, burn = BURN,
-                      aL = NULL, Y = Y_train){
+                      thin = THIN, aL = NULL, Y = Y_train){
    f <- NULL; jj <- JIT; a <- 0
    while (is.null(f) && a < 4){ a <- a + 1
    args <- list(Y, lags=1, k=kk, rank=rk, prior_B="dl",
-                nrun=nrun, burn=burn, thin=THIN, seed=sd_i)
+                nrun=nrun, burn=burn, thin=thin, seed=sd_i)
    if (!is.null(aL)) { args$a_L <- aL; args$b_L <- aL }
    if (a > 1) args$jitter <- jj
    f <- tryCatch(do.call(vapor, args),
@@ -201,7 +195,7 @@ ppc_data <- function(fit, Y = Y_train, n_draws = 300, seed = 1){
    res }
 
 # ============================================================================
-#  1. BASELINES  (Kastner at the matching factor count)
+#  1. BASELINES  (Kastner at the matching factor count, averaged over fits)
 # ============================================================================
 cat("\n=== 1. baselines ===\n")
 set.seed(SEED)
@@ -216,13 +210,22 @@ bic_vals <- sapply(rho_grid, function(rr){
 gl_var <- glasso(S_resid, rho=rho_grid[which.min(bic_vals)], penalize.diagonal=FALSE)
 Omega_glasso <- gl_var$wi; glasso_edges <- sum(gl_var$wi[upper.tri(gl_var$wi)] != 0)
 
-Omega_kast <- fit_kastner(K, Y_train_jit)
-if (is.null(Omega_kast)) stop("Kastner fit failed")
+kast_fits <- Filter(Negate(is.null), lapply(seq_len(R_REPS), function(r){
+   set.seed(SEED + r)
+   Yjr <- Y_train + matrix(rnorm(prod(dim(Y_train)),0,1e-3), T_train, p)
+   fit_kastner(K, Yjr) }))
+if (!length(kast_fits)) stop("all Kastner fits failed")
+Omega_kast <- kast_fits[[1]]
 Omega_samp <- solve(cov(Y_train))
-cat(sprintf("Kastner fit with %d factors, matching VAPOR\n", K))
+cat(sprintf("Kastner fit %d times with %d factors, matching VAPOR\n", length(kast_fits), K))
 
-loss_glasso <- loss_avg(Omega_glasso); loss_kast <- loss_avg(Omega_kast)
-loss_samp   <- loss_avg(Omega_samp)
+kast_loss <- lapply(kast_fits, loss_avg)
+kast_mspe <- vapply(kast_loss, mean, numeric(1))
+loss_kast <- Reduce(`+`, kast_loss)/length(kast_loss)
+loss_glasso <- loss_avg(Omega_glasso); loss_samp <- loss_avg(Omega_samp)
+cat(sprintf("Kastner MSPE across %d fits: %s\n", length(kast_fits),
+            paste(sprintf("%.3f", kast_mspe), collapse=", ")))
+
 loss_rw <- rowMeans(vapply(hid_sets, function(hl)
    vapply(seq_len(T_test), function(t){ hid <- hl[[t]]
    y_prev <- if (t==1) Y_last_train else Y_test[t-1,]
@@ -256,7 +259,7 @@ if (RUN_JUSTIFICATION){
       just <- rbind(just, data.frame(
          rank = lab, k = kk, seed = sd_i,
          pr_expl = round(re["pr_expl"],3), median_rho = round(re["median_rho"],3),
-         n_fail  = sum(pc$ppp < 0.05 | pc$ppp > 0.95),
+         n_fail  = sum(pc$observed < pc$lo | pc$observed > pc$hi),
          ppp_eig = pc$ppp[pc$statistic=="max_eig"],
          rep_eig = pc$rep_mean[pc$statistic=="max_eig"],
          obs_eig = pc$observed[pc$statistic=="max_eig"],
@@ -277,15 +280,16 @@ if (RUN_JUSTIFICATION){
                    sparser_than_kastner=round(sparser_than_kastner,1)), row.names=FALSE)
    cat("\nRead: full rank places most posterior mass on explosive B and badly\n",
        "under-reproduces the leading eigenvalue. Reduced rank fixes both.\n",
+       "n_fail counts summaries falling outside the central 95% interval.\n",
        "sparser_than_kastner counts thresholds (of 6) where VAPOR reports no\n",
        "more nonzero partial correlations than Kastner at the same k.\n",
        "ci_edges is the count under the 95% credible-interval rule, per fit.\n")
 } else { just <- just_agg <- kast_by_k <- NULL }
 
 # ============================================================================
-#  2. MAIN FITS
+#  2. MAIN FITS  (MSPE and timing only; the graph comes from Section 3)
 # ============================================================================
-cat("\n=== 2. main fits (rank =", RANK, ", k =", K, ") ===\n")
+cat("\n=== 2. main fits (rank =", RANK, ", k =", K, ", nrun =", NRUN, ") ===\n")
 pf_mspe <- pfvar_mspe <- v_mspe1 <- v_mspe <- v_edges <- numeric(R_REPS)
 vapor_fits <- vector("list", R_REPS); vapor_times <- numeric(R_REPS)
 v_loss <- pf_loss <- pfv_loss <- vector("list", R_REPS)
@@ -321,13 +325,13 @@ results <- data.frame(
    Method = c("PrecFact (no VAR)","VAR + Glasso","VAR + PrecFact","Kastner (VAR+FSV)",
               "Sample covariance","Random walk","VAPOR (proposed)"),
    MSPE = c(fmt(pf_mspe), sprintf("%.4f", mean(loss_glasso)), fmt(pfvar_mspe),
-            sprintf("%.4f", mean(loss_kast)), sprintf("%.4f", mean(loss_samp)),
+            fmt(kast_mspe), sprintf("%.4f", mean(loss_samp)),
             sprintf("%.4f", mean(loss_rw)), fmt(v_mspe)))
 cat("\n=== p=29 MSPE, averaged over", N_HID, "held-out draws ===\n")
 print(results, row.names=FALSE)
 cat(sprintf("\nVAPOR on the single held-out draw only: %.4f (sd %.4f)\n",
             mean(v_mspe1), sd(v_mspe1)))
-cat(sprintf("VAPOR edges (95%% CI, per fit): %.1f (sd %.1f) | mean fit %.1fs\n",
+cat(sprintf("VAPOR edges per single production fit (95%% CI): %.1f (sd %.1f) | mean fit %.1fs\n",
             mean(v_edges), sd(v_edges), mean(vapor_times)))
 re_main <- pr_explosive(vapor_fits[[1]])
 cat(sprintf("Pr(rho(B) > 1): %.3f | median rho %.3f [%.2f, %.2f]\n",
@@ -352,13 +356,15 @@ dm <- rbind(
          dm_test(Reduce(`+`,pf_loss)/R_REPS, lv)))
 cat("\n=== paired predictive comparison (positive favours VAPOR) ===\n")
 print(dm, row.names=FALSE)
+cat(sprintf("\nVAPOR mean MSPE: %.4f\n", mean(lv)))
 
 # ============================================================================
-#  3. MCMC DIAGNOSTICS
+#  3. MCMC DIAGNOSTICS  (these chains also supply the reported graph)
 # ============================================================================
-cat("\n=== 3. convergence (4 chains) ===\n")
+cat("\n=== 3. convergence (4 chains of", NRUN_L, ", thin", THIN_L, ") ===\n")
 chains <- Filter(Negate(is.null),
-                 lapply(1:4, function(s) fit_vapor(sd_i = 100 + s, nrun = NRUN_L, burn = BURN_L)))
+                 lapply(1:4, function(s) fit_vapor(sd_i = 100 + s, nrun = NRUN_L,
+                                                   burn = BURN_L, thin = THIN_L)))
 
 functionals <- function(fit){
    nd <- dim(fit$Lambda)[3]
@@ -389,9 +395,12 @@ print(diag_tab, row.names=FALSE)
 
 edge_rows <- setdiff(seq_len(nrow(diag_tab)), c(1, nrow(diag_tab)))   # drop loglik and rho_B
 rh <- diag_tab$Rhat[edge_rows]
-cat(sprintf("\nchains: 4 x %d iterations (burn %d, thin %d)\n", NRUN_L, BURN_L, THIN))
-cat(sprintf("of %d reported edges: Rhat<1.1 %d | 1.1-1.5 %d | >1.5 %d | median %.2f\n",
+cat(sprintf("\nchains: 4 x %d iterations (burn %d, thin %d)\n", NRUN_L, BURN_L, THIN_L))
+cat(sprintf("of %d monitored edges: Rhat<1.1 %d | 1.1-1.5 %d | >1.5 %d | median %.2f\n",
             length(rh), sum(rh<1.1), sum(rh>=1.1 & rh<=1.5), sum(rh>1.5), median(rh)))
+cat(sprintf("loglik Rhat %.3f ESS %d | rho_B Rhat %.3f ESS %d\n",
+            diag_tab$Rhat[1], diag_tab$ESS[1],
+            diag_tab$Rhat[nrow(diag_tab)], diag_tab$ESS[nrow(diag_tab)]))
 
 plot_names <- c("loglik", "rho_B", "FEDFUNDS_TB3MS",
                 "PAYEMS_UNRATE", "GDPC1_GPDIC1", "CPI_PPI")
@@ -424,14 +433,14 @@ for (nm in plot_names){
 dev.off(); cat("saved diagnostics_p29_trace.png\n")
 
 # ============================================================================
-#  4. REPORTED EDGES  (95% credible interval, pooled over all fits)
+#  4. REPORTED EDGES  (95% credible interval, long chains only)
 # ============================================================================
 all_fits <- chains
 cs_all   <- ci_set(all_fits)
 edge_ci  <- cs_all$E
 ci_edges <- ci_table(all_fits)
 cat(sprintf("\n=== 4. reported edges: 95%% credible interval excludes zero ===\n"))
-cat(sprintf("    %d of %d pairs, pooled over %d fits\n",
+cat(sprintf("    %d of %d pairs, pooled over %d long chains\n",
             cs_all$n, p*(p-1)/2, length(all_fits)))
 print(ci_edges, row.names=FALSE)
 
@@ -441,8 +450,10 @@ print(ci_edges, row.names=FALSE)
 cat("\n=== 5. posterior predictive check (summaries of y, nine statistics) ===\n")
 ppc29 <- ppc_data(vapor_fits[[1]])
 print(ppc29, row.names=FALSE)
-cat(sprintf("\nstatistics outside [0.05, 0.95]: %d of %d\n",
-            sum(ppc29$ppp < 0.05 | ppc29$ppp > 0.95), nrow(ppc29)))
+cat(sprintf("\noutside central 95%%: %d of %d\n",
+            sum(ppc29$observed < ppc29$lo | ppc29$observed > ppc29$hi), nrow(ppc29)))
+cat("  which: ", paste(ppc29$statistic[ppc29$observed < ppc29$lo |
+                                          ppc29$observed > ppc29$hi], collapse=", "), "\n")
 
 RPm <- attr(ppc29, "replicates")
 png(file.path(path.expand(OUT),"diagnostics_p29_ppc.png"), width=1500, height=900, res=130)
@@ -472,9 +483,9 @@ sens <- rbind(
    do.call(rbind, lapply(c(0.3,0.5,1.0), function(aL) sens_row(sprintf("a_L=%.1f",aL),
                                                                fit_vapor(aL=aL)))))
 print(sens, row.names=FALSE)
-cat(sprintf("MSPE range [%.4f, %.4f], sd %.4f | edges %d to %d\n",
+cat(sprintf("MSPE range [%.4f, %.4f], sd %.4f | edges %d to %d | pr_expl %.3f to %.3f\n",
             min(sens$MSPE), max(sens$MSPE), sd(sens$MSPE),
-            min(sens$edges), max(sens$edges)))
+            min(sens$edges), max(sens$edges), min(sens$pr_expl), max(sens$pr_expl)))
 
 seed_res <- t(vapply(1:6, function(s){
    f <- fit_vapor(sd_i = s); c(mspe = mspe_avg(omega_hat(f)), edges = ci_set(f)$n) },
@@ -483,6 +494,7 @@ cat(sprintf("Seeds: MSPE mean %.4f sd %.4f range [%.4f, %.4f] | edges %.0f to %.
             mean(seed_res[,1]), sd(seed_res[,1]), min(seed_res[,1]), max(seed_res[,1]),
             min(seed_res[,2]), max(seed_res[,2])))
 
+# ---- edge stability across settings ---------------------------------------
 stab_sets <- c(
    lapply(c(5,8,10,15),   function(kk) ci_names(fit_vapor(kk = kk))),
    lapply(c(2,3,4),       function(rr) ci_names(fit_vapor(rk = rr))),
@@ -494,6 +506,14 @@ stability <- data.frame(edge=allE, n_settings=rowSums(memb), row.names=NULL)
 stability <- stability[order(-stability$n_settings), ]
 cat("\n--- edge presence across", length(stab_sets), "settings (95% CI rule) ---\n")
 print(stability, row.names=FALSE)
+
+reported <- paste(pmin(ci_edges$v1, ci_edges$v2), pmax(ci_edges$v1, ci_edges$v2), sep="--")
+hits <- setNames(stability$n_settings[match(reported, stability$edge)], reported)
+hits[is.na(hits)] <- 0
+cat(sprintf("\nof the %d reported edges: in all %d settings %d | all but one %d | fewer than half %d\n",
+            length(reported), length(stab_sets), sum(hits==length(stab_sets)),
+            sum(hits==length(stab_sets)-1), sum(hits < length(stab_sets)/2)))
+print(sort(hits))
 
 # ============================================================================
 #  7. AGREEMENT WITH COMPETING ESTIMATORS
@@ -545,7 +565,10 @@ cat(sprintf("\nVAPOR at or below Kastner in %d of %d rows; below Glasso in %d; b
             sum(edge_tab$VAPOR <= edge_tab$Glasso),
             sum(edge_tab$VAPOR <= edge_tab$SampleCov)))
 
-saveRDS(list(config = list(rank=RANK, k=K, n_hid_draws=N_HID, kastner_factors=K,
+saveRDS(list(config = list(rank=RANK, k=K, nrun=NRUN, nrun_long=NRUN_L,
+                           n_hid_draws=N_HID, kastner_factors=K,
+                           kastner_fits=length(kast_fits),
+                           edge_source="four long chains only",
                            edge_rule="95% credible interval excludes zero"),
              results=results, dm=dm, vapor_times=vapor_times, diag_tab=diag_tab,
              edge_ci=edge_ci, ci_edges=ci_edges, reported_edges=ed29,
@@ -553,6 +576,7 @@ saveRDS(list(config = list(rank=RANK, k=K, n_hid_draws=N_HID, kastner_factors=K,
              sens=sens, seed_res=seed_res, stability=stability,
              justification=just, justification_agg=just_agg,
              ppc=ppc29, pr_explosive=re_main, pc_vapor=cs_all$pm,
+             kast_mspe=kast_mspe,
              raw_omega=list(vapor=Om_vapor, glasso=Omega_glasso,
                             kast=Omega_kast, samp=Omega_samp),
              loss=list(vapor=v_loss, glasso=loss_glasso, kast=loss_kast,
@@ -561,6 +585,5 @@ saveRDS(list(config = list(rank=RANK, k=K, n_hid_draws=N_HID, kastner_factors=K,
              vars=vars_qd, p=p, T_train=T_train),
         file.path(path.expand(OUT), "p29_full_results.rds"))
 cat("\nSaved p29_full_results.rds\n")
-cat("Heatmap script works unchanged; rename its output to heatmap_p29_r3k10.png\n")
-
+cat("Heatmap script reads fit$pc_vapor; rename its output to heatmap_p29_r3k10.png\n")
 

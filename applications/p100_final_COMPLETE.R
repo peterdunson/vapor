@@ -1,10 +1,29 @@
 # ============================================================================
 #  VAPOR p=100 FRED-QD -- full rerun (reduced-rank r=3, k=25) + diagnostics
+#
+#  SETTINGS MATCHED TO THE p=29 SCRIPT:
+#   - production fits: 7500 iterations, burn 2500, thin 5   (was 5000/2500/5)
+#   - nrun sensitivity rows: 5000 / 7500 / 15000            (was 2500/5000/10000)
+#   - Kastner averaged over 3 fits (already the case here)
+#
+#  EDGE RULE: an edge is reported when the central 95% posterior interval of
+#  the partial correlation excludes zero. Edges are selected from the FOUR
+#  LONG CHAINS ONLY, so the reported graph and its Rhat come from the same
+#  posterior sample. The production fits are used for MSPE and timing only.
+#
+#  The heatmap panel, the threshold counts, and the edge ranks all use the
+#  same pooled long-chain posterior mean (cs_all$pm), so colours and boxes in
+#  Figure 3 come from one object.
+#
+#  POSTERIOR PREDICTIVE CHECK: nine summaries of y_t, as at p = 29. At T = p
+#  the sample covariance is singular, so the two partial-correlation
+#  summaries are formed from its Moore-Penrose pseudo-inverse; observed and
+#  replicated panels are treated identically.
 # ============================================================================
 library(VAPOR); library(PrecFact); library(bayesianVARs); library(glasso); library(coda)
 
 SEED <- 2024; R_REPS <- 3; K <- 25; RANK <- 3
-NRUN  <- 5000;  BURN  <- 2500;  THIN  <- 5
+NRUN  <- 7500;  BURN  <- 2500;  THIN  <- 5
 NRUN_L<- 20000; BURN_L<- 10000; THIN_L<- 10
 JIT <- 5e-3
 N_HID <- 20
@@ -44,7 +63,8 @@ test_idx  <- which(dvk >= 2021+(3-1)/12 & dvk <= 2025+(12-1)/12)
 Yall <- scale(Ysub); Y_train <- Yall[train_idx,]; Y_test <- Yall[test_idx,]
 p <- ncol(Y_train); T_train <- nrow(Y_train); T_test <- nrow(Y_test)
 Y_last_train <- Y_train[T_train,]
-cat(sprintf("p=%d  T_train=%d  T/p=%.2f  test=%d\n", p, T_train, T_train/p, T_test))
+cat(sprintf("p=%d  T_train=%d  T/p=%.2f  test=%d | rank=%d k=%d nrun=%d\n",
+            p, T_train, T_train/p, T_test, RANK, K, NRUN))
 
 # ---- helpers ---------------------------------------------------------------
 omega_one <- function(fit,s){ Om <- tcrossprod(fit$Lambda[,,s])
@@ -69,6 +89,11 @@ ci_set <- function(fits){
    E <- (lo > 0 | hi < 0); diag(E) <- FALSE
    list(E = E, pm = apply(PCa,c(1,2),mean), n = sum(E)/2) }
 
+ci_names <- function(fits){
+   cs <- ci_set(fits); ei <- which(cs$E & upper.tri(cs$E), arr.ind = TRUE)
+   if (!nrow(ei)) return(character(0))
+   sort(paste(vars_qd[pmin(ei[,1],ei[,2])], vars_qd[pmax(ei[,1],ei[,2])], sep="--")) }
+
 pr_explosive <- function(fit, n = 400){
    nd <- dim(fit$B)[3]; idx <- unique(round(seq(1,nd,length.out=min(n,nd))))
    rs <- vapply(idx, function(s) spec_rad(fixB(fit$B[,,s])), numeric(1))
@@ -89,14 +114,22 @@ loss_avg <- function(Om) rowMeans(vapply(hid_sets, function(hl) loss_one(Om,hl),
                                          numeric(T_test)))
 mspe_avg <- function(Om) mean(loss_avg(Om))
 
-# ---- posterior predictive check (seven summaries; T = p here) -------------
+# ---- posterior predictive check (nine summaries, as at p = 29) -------------
+#  At T = p the sample covariance is singular, so the two partial-correlation
+#  summaries use the Moore-Penrose pseudo-inverse. Observed and replicated
+#  panels are treated identically, so the check remains valid.
 summ_stats <- function(M){
    C <- cor(M); ev <- sort(eigen(C, symmetric=TRUE, only.values=TRUE)$values, decreasing=TRUE)
    off <- C[upper.tri(C)]
+   PCm <- tryCatch({ Omh <- MASS::ginv(cov(M)); pcor_from_omega(Omh) }, error=function(e) NULL)
+   pv  <- if (is.null(PCm)) c(NA,NA) else {
+      o <- abs(PCm[upper.tri(PCm)]); c(max(o), mean(o > 0.2)) }
    c(max_eig      = ev[1],
      eig2         = ev[2],
      mean_abs_cor = mean(abs(off)),
      q90_abs_cor  = quantile(abs(off), .90, names=FALSE),
+     max_abs_pcor = pv[1],
+     prop_pcor_02 = pv[2],
      mean_sd      = mean(apply(M, 2, sd)),
      kurtosis     = mean(apply(M, 2, function(z) mean((z-mean(z))^4)/var(z)^2))) }
 ac1_of <- function(M) mean(vapply(seq_len(ncol(M)),
@@ -113,9 +146,8 @@ ppc_data <- function(fit, Y = Y_train, n_draws = 300, seed = 1){
       Yrep <- M + matrix(rnorm((Tn-1)*p), Tn-1, p) %*% L
       list(rep = c(summ_stats(Yrep), resid_ac1 = ac1_of(Yrep - M)),
            obs = c(summ_stats(Ycur), resid_ac1 = ac1_of(Ycur - M))) })
-   nq <- length(out[[1]]$rep)
-   RP <- t(vapply(out, `[[`, numeric(nq), "rep"))
-   OB <- t(vapply(out, `[[`, numeric(nq), "obs"))
+   RP <- t(vapply(out, `[[`, numeric(9), "rep"))
+   OB <- t(vapply(out, `[[`, numeric(9), "obs"))
    res <- data.frame(statistic = colnames(RP),
                      observed  = round(colMeans(OB), 3),
                      rep_mean  = round(colMeans(RP), 3),
@@ -128,12 +160,14 @@ ppc_data <- function(fit, Y = Y_train, n_draws = 300, seed = 1){
 
 # ---- fitters ---------------------------------------------------------------
 fit_vapor <- function(kk = K, rk = RANK, sd_i = SEED, nrun = NRUN, burn = BURN,
-                      thin = THIN){
+                      thin = THIN, aL = NULL){
    f <- NULL; jj <- JIT; a <- 0
    while (is.null(f) && a < 4){ a <- a + 1
-   f <- tryCatch(vapor(Y_train, lags=1, k=kk, rank=rk, prior_B="dl",
-                       nrun=nrun, burn=burn, thin=thin, seed=sd_i,
-                       jitter=jj, init="random"),
+   args <- list(Y_train, lags=1, k=kk, rank=rk, prior_B="dl",
+                nrun=nrun, burn=burn, thin=thin, seed=sd_i,
+                jitter=jj, init="random")
+   if (!is.null(aL)) { args$a_L <- aL; args$b_L <- aL }
+   f <- tryCatch(do.call(vapor, args),
                  error=function(e){ message("  retry with larger jitter"); NULL})
    jj <- jj*2 }
    f }
@@ -198,9 +232,9 @@ cat(sprintf("condition numbers -- Kastner %.3g | Glasso %.3g | sample %.3g\n",
             kappa(Omega_samp, exact=TRUE)))
 
 # ============================================================================
-#  2. MAIN FITS
+#  2. MAIN FITS  (MSPE and timing only; the graph comes from Section 3)
 # ============================================================================
-cat("\n=== 2. main fits (rank =", RANK, ", k =", K, ") ===\n")
+cat("\n=== 2. main fits (rank =", RANK, ", k =", K, ", nrun =", NRUN, ") ===\n")
 pf_mspe <- pfvar_mspe <- v_mspe <- v_edges <- numeric(R_REPS)
 vapor_fits <- vector("list", R_REPS); vapor_times <- numeric(R_REPS)
 v_loss <- pf_loss <- pfv_loss <- vector("list", R_REPS)
@@ -228,7 +262,7 @@ results <- data.frame(
             sprintf("%.4f", mean(loss_rw)), fmt(v_mspe)))
 cat("\n=== p=100 MSPE, averaged over", N_HID, "held-out draws ===\n")
 print(results, row.names=FALSE)
-cat(sprintf("VAPOR edges (95%% CI, per fit): %.1f (sd %.1f) | mean fit %.1fs\n",
+cat(sprintf("VAPOR edges per single production fit (95%% CI): %.1f (sd %.1f) | mean fit %.1fs\n",
             mean(v_edges), sd(v_edges), mean(vapor_times)))
 re_main <- pr_explosive(vapor_fits[[1]])
 cat(sprintf("Pr(rho(B) > 1): %.3f | median rho %.3f\n",
@@ -253,11 +287,12 @@ dm <- rbind(
    cbind(Method="Random walk",       MSPE=round(mean(loss_rw),3),     dm_test(loss_rw, lv)))
 cat("\n=== paired predictive comparison (positive favours VAPOR) ===\n")
 print(dm, row.names=FALSE)
+cat(sprintf("\nVAPOR mean MSPE: %.4f\n", mean(lv)))
 
 # ============================================================================
-#  3. CONVERGENCE CHAINS
+#  3. CONVERGENCE CHAINS  (these also supply the reported graph)
 # ============================================================================
-cat("\n=== 3. convergence (4 chains of", NRUN_L, ") ===\n")
+cat("\n=== 3. convergence (4 chains of", NRUN_L, ", thin", THIN_L, ") ===\n")
 chains_long <- Filter(Negate(is.null),
                       lapply(1:4, function(s){ cat(sprintf("\r  chain %d/4", s)); flush.console()
                          fit_vapor(sd_i = 100 + s, nrun = NRUN_L, burn = BURN_L, thin = THIN_L) }))
@@ -265,7 +300,7 @@ cat("\n")
 saveRDS(chains_long, file.path(path.expand(OUT), "p100_chains_final.rds"))
 
 # ============================================================================
-#  4. REPORTED EDGES
+#  4. REPORTED EDGES  (long chains only)
 # ============================================================================
 all_fits <- chains_long
 cs_all <- ci_set(all_fits); edge_ci <- cs_all$E
@@ -273,7 +308,7 @@ idx <- which(edge_ci & upper.tri(edge_ci), arr.ind=TRUE)
 ci_edges <- data.frame(v1=vars_qd[idx[,1]], v2=vars_qd[idx[,2]],
                        pcor=round(cs_all$pm[idx],3))
 ci_edges <- ci_edges[order(-abs(ci_edges$pcor)), ]
-cat(sprintf("\n=== 4. reported edges: %d of %d pairs, pooled over %d fits ===\n",
+cat(sprintf("\n=== 4. reported edges: %d of %d pairs, pooled over %d long chains ===\n",
             cs_all$n, p*(p-1)/2, length(all_fits)))
 print(ci_edges, row.names=FALSE)
 
@@ -302,6 +337,9 @@ er <- diag_tab$Rhat[-c(1, nrow(diag_tab))]
 cat(sprintf("\nof %d reported edges: Rhat<1.1 %d | 1.1-1.5 %d | >1.5 %d | median %.2f\n",
             length(er), sum(er<1.1,na.rm=TRUE), sum(er>=1.1 & er<=1.5,na.rm=TRUE),
             sum(er>1.5,na.rm=TRUE), median(er,na.rm=TRUE)))
+cat(sprintf("loglik Rhat %.3f ESS %d | rho_B Rhat %.3f ESS %d\n",
+            diag_tab$Rhat[1], diag_tab$ESS[1],
+            diag_tab$Rhat[nrow(diag_tab)], diag_tab$ESS[nrow(diag_tab)]))
 edge_rhat <- data.frame(v1=ci_edges$v1, v2=ci_edges$v2, pcor=ci_edges$pcor,
                         ESS=diag_tab$ESS[2:(nrow(ci_edges)+1)],
                         Rhat=diag_tab$Rhat[2:(nrow(ci_edges)+1)])
@@ -331,17 +369,19 @@ for (nm in plot_names){
 dev.off(); cat("Saved diagnostics_p100_trace.png\n")
 
 # ============================================================================
-#  5. POSTERIOR PREDICTIVE CHECK
+#  5. POSTERIOR PREDICTIVE CHECK  (nine summaries)
 # ============================================================================
-cat("\n=== 5. posterior predictive check ===\n")
+cat("\n=== 5. posterior predictive check (nine summaries of y) ===\n")
 ppc100 <- ppc_data(vapor_fits[[1]])
 print(ppc100, row.names=FALSE)
-cat(sprintf("\nstatistics outside [0.05, 0.95]: %d of %d\n",
-            sum(ppc100$ppp < 0.05 | ppc100$ppp > 0.95), nrow(ppc100)))
+cat(sprintf("\noutside central 95%%: %d of %d\n",
+            sum(ppc100$observed < ppc100$lo | ppc100$observed > ppc100$hi), nrow(ppc100)))
+cat("  which: ", paste(ppc100$statistic[ppc100$observed < ppc100$lo |
+                                           ppc100$observed > ppc100$hi], collapse=", "), "\n")
 RPm <- attr(ppc100, "replicates"); nq <- nrow(ppc100)
 png(file.path(path.expand(OUT),"diagnostics_p100_ppc.png"),
-    width=1500, height=700, res=130)
-par(mfrow=c(ceiling(nq/4),4), mar=c(4,3.4,3,1), mgp=c(2.2,0.7,0), bty="l", las=1)
+    width=1500, height=900, res=130)
+par(mfrow=c(3,3), mar=c(4,3.4,3,1), mgp=c(2.2,0.7,0), bty="l", las=1)
 for (j in seq_len(nq)){
    obs_j <- ppc100$observed[j]
    hist(RPm[,j], breaks=25, col="grey85", border="grey60",
@@ -352,37 +392,50 @@ for (j in seq_len(nq)){
 dev.off(); cat("Saved diagnostics_p100_ppc.png\n")
 
 # ============================================================================
-#  6. SENSITIVITY
+#  6. SENSITIVITY  (nrun rows matched to p = 29: 5000 / 7500 / 15000)
 # ============================================================================
 cat("\n=== 6. sensitivity ===\n")
 sens_row <- function(tag, f) data.frame(setting=tag,
                                         MSPE=round(mspe_avg(omega_hat(f)),4), edges=ci_set(f)$n,
                                         pr_expl=round(pr_explosive(f)["pr_expl"],3))
-fit_vapor_aL <- function(aL){
-   f <- NULL; jj <- JIT; a <- 0
-   while (is.null(f) && a < 4){ a <- a + 1
-   f <- tryCatch(vapor(Y_train, lags=1, k=K, rank=RANK, prior_B="dl",
-                       a_L=aL, b_L=aL, nrun=NRUN, burn=BURN, thin=THIN,
-                       seed=SEED, jitter=jj, init="random"),
-                 error=function(e) NULL); jj <- jj*2 }
-   f }
 sens <- rbind(
    do.call(rbind, lapply(c(15,25,35), function(kk) sens_row(sprintf("k=%d",kk), fit_vapor(kk=kk)))),
    do.call(rbind, lapply(c(2,3,4),    function(rr) sens_row(sprintf("rank=%d",rr), fit_vapor(rk=rr)))),
-   do.call(rbind, lapply(list(c(2500,1250),c(5000,2500),c(10000,5000)),
+   do.call(rbind, lapply(list(c(5000,2500),c(7500,2500),c(15000,5000)),
                          function(nb) sens_row(sprintf("nrun=%d",nb[1]),
                                                fit_vapor(nrun=nb[1], burn=nb[2])))),
    do.call(rbind, lapply(c(0.3,0.5,1.0), function(aL) sens_row(sprintf("a_L=%.1f",aL),
-                                                               fit_vapor_aL(aL)))))
+                                                               fit_vapor(aL=aL)))))
 print(sens, row.names=FALSE)
-cat(sprintf("MSPE range [%.4f, %.4f] sd %.4f | edges %d to %d\n",
+cat(sprintf("MSPE range [%.4f, %.4f] sd %.4f | edges %d to %d | pr_expl %.3f to %.3f\n",
             min(sens$MSPE), max(sens$MSPE), sd(sens$MSPE),
-            min(sens$edges), max(sens$edges)))
+            min(sens$edges), max(sens$edges), min(sens$pr_expl), max(sens$pr_expl)))
 seed_res <- t(vapply(1:6, function(s){
    f <- fit_vapor(sd_i=s); c(mspe=mspe_avg(omega_hat(f)), edges=ci_set(f)$n) }, numeric(2)))
 cat(sprintf("Seeds: MSPE mean %.4f sd %.4f range [%.4f, %.4f] | edges %.0f to %.0f\n",
             mean(seed_res[,1]), sd(seed_res[,1]), min(seed_res[,1]), max(seed_res[,1]),
             min(seed_res[,2]), max(seed_res[,2])))
+
+# ---- edge stability across settings (as at p = 29) ------------------------
+stab_sets <- c(
+   lapply(c(15,25,35),    function(kk) ci_names(fit_vapor(kk = kk))),
+   lapply(c(2,3,4),       function(rr) ci_names(fit_vapor(rk = rr))),
+   lapply(c(0.3,0.5,1.0), function(aL) ci_names(fit_vapor(aL = aL))))
+allE <- sort(unique(unlist(stab_sets)))
+memb <- vapply(stab_sets, function(s) allE %in% s, logical(length(allE)))
+if (is.null(dim(memb))) memb <- matrix(memb, nrow=length(allE))
+stability <- data.frame(edge=allE, n_settings=rowSums(memb), row.names=NULL)
+stability <- stability[order(-stability$n_settings), ]
+cat("\n--- edge presence across", length(stab_sets), "settings (95% CI rule) ---\n")
+print(stability, row.names=FALSE)
+
+reported <- paste(pmin(ci_edges$v1, ci_edges$v2), pmax(ci_edges$v1, ci_edges$v2), sep="--")
+hits <- setNames(stability$n_settings[match(reported, stability$edge)], reported)
+hits[is.na(hits)] <- 0
+cat(sprintf("\nof the %d reported edges: in all %d settings %d | all but one %d | fewer than half %d\n",
+            length(reported), length(stab_sets), sum(hits==length(stab_sets)),
+            sum(hits==length(stab_sets)-1), sum(hits < length(stab_sets)/2)))
+print(sort(hits))
 
 # ============================================================================
 #  7. AGREEMENT WITH COMPETING ESTIMATORS
@@ -427,14 +480,16 @@ cat(sprintf("\n=== 8. edge counts, out of %d pairs (VAPOR and Kastner both at k=
             choose(p,2), K))
 print(edge_tab, row.names=FALSE)
 
-saveRDS(list(config=list(rank=RANK,k=K,n_hid_draws=N_HID,kastner_fits=length(kast_fits),
+saveRDS(list(config=list(rank=RANK,k=K,nrun=NRUN,nrun_long=NRUN_L,
+                         n_hid_draws=N_HID,kastner_fits=length(kast_fits),
+                         edge_source="four long chains only",
                          edge_rule="95% credible interval excludes zero"),
              results=results, dm=dm, vapor_times=vapor_times, diag_tab=diag_tab,
              edge_ci=edge_ci, ci_edges=ci_edges, edge_rhat=edge_rhat,
              edge_ranks=edge_ranks, edge_tab=edge_tab,
-             sens=sens, seed_res=seed_res, ppc=ppc100, pr_explosive=re_main,
+             sens=sens, seed_res=seed_res, stability=stability, ppc=ppc100,
+             pr_explosive=re_main, kast_mspe=kast_mspe,
              pc_vapor=cs_all$pm,
-             kast_mspe=kast_mspe,
              raw_omega=list(vapor=Om_vapor, glasso=Omega_glasso,
                             kast=Omega_kast, samp=Omega_samp),
              loss=list(vapor=v_loss, glasso=loss_glasso, kast=loss_kast,
