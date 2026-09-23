@@ -263,7 +263,7 @@ if (RUN_JUSTIFICATION){
          ppp_eig = pc$ppp[pc$statistic=="max_eig"],
          rep_eig = pc$rep_mean[pc$statistic=="max_eig"],
          obs_eig = pc$observed[pc$statistic=="max_eig"],
-         mspe1   = round(mspe_single(omega_hat(f)),4),
+         mspe1   = round(mspe_avg(omega_hat(f)),4),
          ci_edges = ci_set(f)$n,
          sparser_than_kastner = wins)) }
    cat("\n")
