@@ -57,9 +57,9 @@ pos <- rbind(
    IPCONGD=c(1.6,2.1), IPBUSEQ=c(0.8,1.1), IPFINAL=c(2.4,1.1),
    PCDGx=c(4.4,2.1),   PCESVx=c(3.6,1.1),  PCECC96=c(5.2,1.1),
    PCNDx=c(4.5,0.15),
-   CPIAUCSL=c(6.8,1.6),CPITRNSL=c(8.2,1.6),
+   CPIAUCSL=c(7.3,1.6),CPITRNSL=c(8.7,1.6),
    PPIACO=c(9.4,2.1),  WPSID61=c(9.4,1.0),
-   AAA=c(7.8,2.4),     BAA=c(7.8,0.7),
+   AAA=c(6.2,2.4),     BAA=c(6.2,0.7),
    # bottom row: the interest-rate chain, spread wide
    GS10=c(1.2,-1.1), GS5=c(2.9,-1.1), GS1=c(4.6,-1.1),
    TB3MS=c(6.3,-1.1), FEDFUNDS=c(8.0,-1.1), MORTGAGE30US=c(2.9,0.3)
