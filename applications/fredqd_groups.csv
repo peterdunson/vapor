@@ -1,0 +1,103 @@
+series,group_code,group_name,source
+AAA,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+AHETPIx,7,Earnings and Productivity,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+AMDMNOx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+ANDENOx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+AWHMAN,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+AWHNONAG,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+BAA,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+BAA10YM,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+BOGMBASEREALx,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+BUSINVx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+BUSLOANSx,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CE16OV,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CES2000000008x,7,Earnings and Productivity,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CIVPART,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CLAIMSx,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CMRMTSPLx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CONSUMERx,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CPIAUCSL,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CPILFESL,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CPIMEDSL,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CPITRNSL,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+CUMFNS,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+DMANEMP,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+DPIC96,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+EXCAUSx,11,Exchange Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+EXJPUSx,11,Exchange Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+EXPGSC1,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+EXUSUKx,11,Exchange Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+FEDFUNDS,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+FPIx,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GCEC1,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GDPC1,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GDPCTPI,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GPDIC1,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GS1,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GS10,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GS10TB3Mx,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+GS5,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+HOUST,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+HOUST5F,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+HOUSTS,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+HOUSTW,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+HWIURATIOx,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IMPGSC1,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+INDPRO,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPBUSEQ,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPCONGD,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPDMAT,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPFINAL,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPFUELS,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPMANSICS,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPMAT,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+IPNMAT,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+ISRATIOx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+M1REAL,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+M2REAL,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+MANEMP,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+MORTGAGE30US,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+NASDAQCOM,13,Stock Markets,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+NIKKEI225,13,Stock Markets,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+NONREVSLx,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+OILPRICEx,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PAYEMS,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCDGx,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCECC96,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCECTPI,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCEPILFE,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCESVx,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PCNDx,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PERMIT,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PNFIx,1,NIPA,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PPIACO,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+PPICMM,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+REALLNx,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+RSAFSx,5,"Inventories, Orders, and Sales",https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+S.P.500,13,Stock Markets,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+SPCS10RSA,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+TB3MS,8,Interest Rates,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+TCU,2,Industrial Production,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+TOTRESNS,9,Money and Credit,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UEMP27OV,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UEMPLT5,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UEMPMEAN,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UMCSENTx,12,Other,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UNRATE,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UNRATELTx,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+UNRATESTx,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USCONS,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USFIRE,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USGOOD,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USGOVT,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USINFO,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USLAH,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USMINE,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USPBS,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USPRIV,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USSTHPI,4,Housing,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USTPU,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+USTRADE,3,Employment and Unemployment,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+VIXCLSx,13,Stock Markets,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+WPSFD49207,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
+WPSID61,6,Prices,https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/research/fred-md/fred-qd_appendix0324.zip
