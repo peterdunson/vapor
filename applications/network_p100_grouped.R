@@ -7,35 +7,54 @@
 library(igraph)
 
 APP <- path.expand("~/Desktop/precision_factor/PrecFact/external_testing/var_prec/application")
-fit <- readRDS(file.path(APP, "p100_full_results.rds"))
-e   <- fit$ci_edges
+fit <- readRDS(file.path(APP, "p100_results.rds"))
+e   <- fit$long$ci_edges
 OUT <- file.path(APP, "network_p100_grouped.png")
 
-sect <- c(
-   GDPC1="Real activity", GPDIC1="Real activity", INDPRO="Real activity",
-   IPFINAL="Real activity", IPCONGD="Real activity", IPBUSEQ="Real activity",
-   IPMAT="Real activity", AMDMNOx="Real activity", ANDENOx="Real activity",
-   TCU="Real activity", CUMFNS="Real activity",
-   HOUST="Housing", HOUSTW="Housing", MORTGAGE30US="Housing",
-   PCECC96="Consumption", PCDGx="Consumption", PCESVx="Consumption",
-   PCNDx="Consumption",
-   UNRATE="Labor", UNRATESTx="Labor", UNRATELTx="Labor", UEMP27OV="Labor",
-   MANEMP="Labor", DMANEMP="Labor", USGOOD="Labor", USCONS="Labor",
-   CPIAUCSL="Prices", CPITRNSL="Prices", PPIACO="Prices", WPSID61="Prices",
-   FEDFUNDS="Rates & credit", TB3MS="Rates & credit", GS1="Rates & credit",
-   GS5="Rates & credit", GS10="Rates & credit", AAA="Rates & credit",
-   BAA="Rates & credit"
-)
+#  Node set: the series the hand-placed layout below positions.
+NODES <- c("INDPRO","IPMAT","TCU","CUMFNS","AMDMNOx","ANDENOx",
+           "GDPC1","GPDIC1","HOUST","HOUSTW","USGOOD","USCONS",
+           "UNRATE","UNRATESTx","UNRATELTx","UEMP27OV","MANEMP","DMANEMP",
+           "IPCONGD","IPBUSEQ","IPFINAL","PCDGx","PCESVx","PCECC96","PCNDx",
+           "CPIAUCSL","CPITRNSL","PPIACO","WPSID61","AAA","BAA",
+           "GS10","GS5","GS1","TB3MS","FEDFUNDS","MORTGAGE30US")
+
+#  Colours come from the OFFICIAL FRED-QD groups (McCracken-Ng appendix),
+#  read from fredqd_groups.csv -- not from a hand-made sector map. Note this
+#  puts MORTGAGE30US in Interest Rates, not Housing.
+grp   <- read.csv("applications/fredqd_groups.csv", stringsAsFactors = FALSE)
+gname <- setNames(grp$group_name, grp$series)
+gcode <- setNames(grp$group_code, grp$series)
+no_group <- setdiff(NODES, names(gname))
+if (length(no_group)) stop("no official group for: ", paste(no_group, collapse=", "))
+sect <- gname[NODES]
 
 # fail loudly if the fit contains a series the sector table does not know
 missing <- setdiff(unique(c(e$v1, e$v2)), names(sect))
 if (length(missing)) stop("add to sect: ", paste(missing, collapse=", "))
 
-sector_levels <- c("Real activity","Housing","Consumption","Labor","Prices","Rates & credit")
-pal <- setNames(c("#AEC7E8","#9ED6D0","#A8D5A2","#D6B3D6","#F2D98C","#F2A6A6"), sector_levels)
+#  legend follows the official group numbering
+lv <- unique(data.frame(code = gcode[NODES], name = unname(sect)))
+lv <- lv[order(lv$code), ]
+sector_levels <- lv$name
+pal <- setNames(c("#AEC7E8","#9ED6D0","#A8D5A2","#D6B3D6",
+                  "#F2D98C","#F2A6A6","#C9B7A0")[seq_along(sector_levels)], sector_levels)
 
 g <- graph_from_data_frame(e[, c("v1","v2","pcor")], directed = FALSE,
-                           vertices = data.frame(name = names(sect), sector = unname(sect)))
+                           vertices = data.frame(name = NODES, sector = unname(sect)))
+
+#  the drawn graph must be exactly the CI edge table
+drawn  <- apply(ends(g, E(g)), 1, function(z) paste(sort(z), collapse="|"))
+wanted <- apply(e[, 1:2], 1, function(z) paste(sort(z), collapse="|"))
+cat(sprintf("CI edge table: %d edges | drawn: %d edges\n", nrow(e), ecount(g)))
+if (setequal(drawn, wanted) && length(drawn) == length(wanted)){
+   cat("edge sets match exactly\n")
+} else {
+   cat("MISMATCH\n")
+   cat("  in table, not drawn:", paste(setdiff(wanted, drawn), collapse=", "), "\n")
+   cat("  drawn, not in table:", paste(setdiff(drawn, wanted), collapse=", "), "\n") }
+iso <- V(g)$name[degree(g) == 0]
+if (length(iso)) cat("isolated nodes drawn:", paste(iso, collapse=", "), "\n")
 V(g)$sector <- sect[V(g)$name]
 V(g)$color  <- pal[V(g)$sector]
 
@@ -86,7 +105,7 @@ cat("crossing: ", paste(apply(ends_mat[!same_sect, , drop=FALSE], 1,
                               paste, collapse="--"), collapse="; "), "\n")
 
 png(OUT, width = 12, height = 9, units = "in", res = 300, bg = "white")
-par(mar = c(2.5, 0.5, 0.5, 0.5))
+par(mar = c(5.0, 0.5, 0.5, 0.5))
 plot(g, layout = lay, rescale = TRUE, asp = 0, edge.label = NA)
 
 xy <- layout.norm(lay, -1, 1, -1, 1); rownames(xy) <- V(g)$name
@@ -98,7 +117,8 @@ for (i in seq_len(ecount(g))) {
    rect(mx-w/2, my-h/2, mx+w/2, my+h/2, col="white", border=NA)
    text(mx, my, lab, cex=0.6, col="grey20")
 }
+#  seven groups do not fit on one row, so wrap to two
 legend("bottom", legend=sector_levels, pt.bg=pal[sector_levels], pch=21,
-       pt.cex=1.7, cex=0.8, bty="n", horiz=TRUE, inset=-0.01, x.intersp=0.6)
+       pt.cex=1.6, cex=0.78, bty="n", ncol=4, inset=-0.06, x.intersp=0.7, xpd=TRUE)
 dev.off()
 cat("wrote", OUT, "\n")

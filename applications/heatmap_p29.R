@@ -5,21 +5,34 @@
 #  column variable above it and the row variable to its left.
 # ============================================================================
 APP <- path.expand("~/Desktop/precision_factor/PrecFact/external_testing/var_prec/application")
-fit <- readRDS(file.path(APP, "p29_full_results.rds"))
+fit <- readRDS(file.path(APP, "p29_results.rds"))
 OUT <- file.path(APP, "heatmap_p29_r3k10.png")
 
 LAB_CEX <- 1.15          # raise or lower to taste
 
 vars <- fit$vars; n <- length(vars)
-ed   <- fit$ci_edges
+ed   <- fit$long$ci_edges
 ei   <- cbind(match(ed$v1, vars), match(ed$v2, vars))
 cat(sprintf("%d reported edges\n", nrow(ei)))
 
-to_pc <- function(Om){ d <- sqrt(diag(Om)); pc <- -Om/outer(d,d); diag(pc) <- NA; pc }
-panels <- list("VAPOR"             = { M <- fit$pc_vapor; diag(M) <- NA; M },
-               "Kastner"           = to_pc(fit$raw_omega$kast),
-               "VAR + Glasso"      = to_pc(fit$raw_omega$glasso),
-               "Sample covariance" = to_pc(fit$raw_omega$samp))
+#  Kastner comes from its 4 POOLED LONG CHAINS (matched to VAPOR's effort),
+#  read from p29_long_competitors.rds; if that file is missing the panel
+#  falls back to the mean of its three production fits and says so.
+#  The "VAR + Glasso" panel is the RANK-3 fit, matching what that name now
+#  means everywhere else. The title stays "VAR + Glasso".
+avg_pc <- function(m) Reduce(`+`, m$pcor)/length(m$pcor)
+LCF <- file.path(APP, "p29_long_competitors.rds")
+LC  <- if (file.exists(LCF)) readRDS(LCF) else NULL
+kast_pc <- if (!is.null(LC$pooled_pcor[["Kastner (VAR+FSV)"]])){
+   cat("Kastner panel: pooled 4 long chains\n")
+   LC$pooled_pcor[["Kastner (VAR+FSV)"]]
+} else { cat("Kastner panel: mean of 3 production fits (long-chain file missing)\n")
+   avg_pc(fit$methods[["Kastner (VAR+FSV)"]]) }
+nodiag <- function(M){ diag(M) <- NA; M }
+panels <- list("VAPOR"             = nodiag(fit$long$pc_vapor),
+               "Kastner"           = nodiag(kast_pc),
+               "VAR + Glasso"      = nodiag(fit$methods[["VAR + Glasso"]]$pcor[[1]]),
+               "Sample covariance" = nodiag(fit$methods[["Sample covariance"]]$pcor[[1]]))
 pal <- colorRampPalette(c("blue","white","red"))(101)
 
 #  Draw each edge once, in the upper triangle, so labels do not collide with
