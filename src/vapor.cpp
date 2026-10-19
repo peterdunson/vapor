@@ -539,6 +539,18 @@ Rcpp::List var_precision_sampler(
    arma::vec   dir_prec_mc(n_mc, fill::zeros);
    arma::vec   nclust_mc(n_mc, fill::zeros);
    
+   //  Idiosyncratic-precision floor.  Without it the DP atom for a series whose
+   //  residual sum of squares is dominated by one or two quarters can collapse
+   //  towards zero, Lambda' Delta^-1 Lambda + I loses positive-definiteness and
+   //  chol() aborts the sampler.  1e-8 is the floor delta_init already applies.
+   //  Clamping draws no random numbers, so the chain is unchanged up to the
+   //  first iteration at which the floor binds.  floor_hits counts, per series,
+   //  the iterations at which it bound and floor_first the first such iteration
+   //  (0 = never); both are returned.
+   const double PS_FLOOR = 1e-8;
+   arma::uvec floor_hits(p,  fill::zeros);
+   arma::uvec floor_first(p, fill::zeros);
+
    Progress prog(nrun, true);
    
    for (int i = 0; i < nrun; ++i) {
@@ -657,6 +669,13 @@ Rcpp::List var_precision_sampler(
                ps(inds_eq_j[j]).fill(atom);
             } else inds_eq_j[j].reset();
          }
+
+         for (unsigned j = 0; j < p; ++j)
+            if (ps(j) < PS_FLOOR) {
+               ++floor_hits(j);
+               if (floor_first(j) == 0) floor_first(j) = i + 1;
+               ps(j) = PS_FLOOR;
+            }
          {
             unsigned n_clust = (unsigned)sum(nj_val > 0);
             double a_sg = std::max((unsigned)1, n_clust);
@@ -691,7 +710,9 @@ Rcpp::List var_precision_sampler(
       Rcpp::Named("B")         = B_mc,
       Rcpp::Named("loglik")    = loglik_mc,
       Rcpp::Named("dir_prec")  = dir_prec_mc,
-      Rcpp::Named("nclust")    = nclust_mc
+      Rcpp::Named("nclust")    = nclust_mc,
+      Rcpp::Named("floor_hits")  = floor_hits,
+      Rcpp::Named("floor_first") = floor_first
    );
 }
 
@@ -807,6 +828,18 @@ Rcpp::List var_precision_sampler_rr(
    arma::vec   dir_prec_mc(n_mc, fill::zeros);
    arma::vec   nclust_mc(n_mc, fill::zeros);
    
+   //  Idiosyncratic-precision floor.  Without it the DP atom for a series whose
+   //  residual sum of squares is dominated by one or two quarters can collapse
+   //  towards zero, Lambda' Delta^-1 Lambda + I loses positive-definiteness and
+   //  chol() aborts the sampler.  1e-8 is the floor delta_init already applies.
+   //  Clamping draws no random numbers, so the chain is unchanged up to the
+   //  first iteration at which the floor binds.  floor_hits counts, per series,
+   //  the iterations at which it bound and floor_first the first such iteration
+   //  (0 = never); both are returned.
+   const double PS_FLOOR = 1e-8;
+   arma::uvec floor_hits(p,  fill::zeros);
+   arma::uvec floor_first(p, fill::zeros);
+
    Progress prog(nrun, true);
    
    for (int i = 0; i < nrun; ++i) {
@@ -934,6 +967,13 @@ Rcpp::List var_precision_sampler_rr(
                ps(inds_eq_j[j]).fill(atom);
             } else inds_eq_j[j].reset();
          }
+
+         for (unsigned j = 0; j < p; ++j)
+            if (ps(j) < PS_FLOOR) {
+               ++floor_hits(j);
+               if (floor_first(j) == 0) floor_first(j) = i + 1;
+               ps(j) = PS_FLOOR;
+            }
          {
             unsigned n_clust = (unsigned)sum(nj_val > 0);
             double a_sg = std::max((unsigned)1, n_clust);
@@ -974,6 +1014,8 @@ Rcpp::List var_precision_sampler_rr(
       Rcpp::Named("prior_B")   = prior_B,
       Rcpp::Named("loglik")    = loglik_mc,
       Rcpp::Named("dir_prec")  = dir_prec_mc,
-      Rcpp::Named("nclust")    = nclust_mc
+      Rcpp::Named("nclust")    = nclust_mc,
+      Rcpp::Named("floor_hits")  = floor_hits,
+      Rcpp::Named("floor_first") = floor_first
    );
 }

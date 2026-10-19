@@ -179,9 +179,15 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    
    Omega <- posterior_mean_omega(Lambda, ps)
    
+   #  per-series count of the iterations at which the residual-precision floor
+   #  bound, and the first such iteration (0 = never)
+   fh <- as.integer(res$floor_hits); ff <- as.integer(res$floor_first)
+   names(fh) <- names(ff) <- colnames(Y)
+
    out <- list(Lambda = Lambda, residual_prec = ps, B = B, Omega = Omega,
                V = V_kept, loglik = loglik,
                dir_prec = dir_prec, nclust = nclust,
+               floor_hits = fh, floor_first = ff,
                dims = list(T = T_obs, p = p, k = k, lags = lags,
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
