@@ -11,7 +11,9 @@ library(pheatmap)
 library(gridExtra)
 library(grid)
 
-source("~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R")
+#  in-repo copy; previously sourced from
+#  ~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R
+source("/Users/peterdunson/Desktop/vapor/simulation/simulate_data_fxns.R")
 
 R0           <- 3
 PERTURB_FRAC <- 0.05

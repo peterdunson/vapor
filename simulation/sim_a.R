@@ -9,7 +9,9 @@ library(bayesianVARs)
 library(glasso)
 library(MASS)
 
-source("~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R")
+#  in-repo copy; previously sourced from
+#  ~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R
+source("/Users/peterdunson/Desktop/vapor/simulation/simulate_data_fxns.R")
 OUT <- "~/Desktop/precision_factor/PrecFact/external_testing/var_prec"
 
 N_REPS <- 25

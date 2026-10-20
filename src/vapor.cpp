@@ -550,6 +550,11 @@ Rcpp::List var_precision_sampler(
    const double PS_FLOOR = 1e-8;
    arma::uvec floor_hits(p,  fill::zeros);
    arma::uvec floor_first(p, fill::zeros);
+   //  floor_iters counts the ITERATIONS in which at least one series was
+   //  floored.  It is a plain counter over a flag already computed by the loop
+   //  below: it draws no random numbers and alters no state the sampler reads,
+   //  so every draw is identical to a build without it.
+   arma::uword floor_iters = 0;
 
    Progress prog(nrun, true);
    
@@ -670,12 +675,15 @@ Rcpp::List var_precision_sampler(
             } else inds_eq_j[j].reset();
          }
 
+         bool any_floored = false;
          for (unsigned j = 0; j < p; ++j)
             if (ps(j) < PS_FLOOR) {
                ++floor_hits(j);
                if (floor_first(j) == 0) floor_first(j) = i + 1;
                ps(j) = PS_FLOOR;
+               any_floored = true;
             }
+         if (any_floored) ++floor_iters;
          {
             unsigned n_clust = (unsigned)sum(nj_val > 0);
             double a_sg = std::max((unsigned)1, n_clust);
@@ -712,7 +720,8 @@ Rcpp::List var_precision_sampler(
       Rcpp::Named("dir_prec")  = dir_prec_mc,
       Rcpp::Named("nclust")    = nclust_mc,
       Rcpp::Named("floor_hits")  = floor_hits,
-      Rcpp::Named("floor_first") = floor_first
+      Rcpp::Named("floor_first") = floor_first,
+      Rcpp::Named("floor_iters") = floor_iters
    );
 }
 
@@ -839,6 +848,11 @@ Rcpp::List var_precision_sampler_rr(
    const double PS_FLOOR = 1e-8;
    arma::uvec floor_hits(p,  fill::zeros);
    arma::uvec floor_first(p, fill::zeros);
+   //  floor_iters counts the ITERATIONS in which at least one series was
+   //  floored.  It is a plain counter over a flag already computed by the loop
+   //  below: it draws no random numbers and alters no state the sampler reads,
+   //  so every draw is identical to a build without it.
+   arma::uword floor_iters = 0;
 
    Progress prog(nrun, true);
    
@@ -968,12 +982,15 @@ Rcpp::List var_precision_sampler_rr(
             } else inds_eq_j[j].reset();
          }
 
+         bool any_floored = false;
          for (unsigned j = 0; j < p; ++j)
             if (ps(j) < PS_FLOOR) {
                ++floor_hits(j);
                if (floor_first(j) == 0) floor_first(j) = i + 1;
                ps(j) = PS_FLOOR;
+               any_floored = true;
             }
+         if (any_floored) ++floor_iters;
          {
             unsigned n_clust = (unsigned)sum(nj_val > 0);
             double a_sg = std::max((unsigned)1, n_clust);
@@ -1016,6 +1033,7 @@ Rcpp::List var_precision_sampler_rr(
       Rcpp::Named("dir_prec")  = dir_prec_mc,
       Rcpp::Named("nclust")    = nclust_mc,
       Rcpp::Named("floor_hits")  = floor_hits,
-      Rcpp::Named("floor_first") = floor_first
+      Rcpp::Named("floor_first") = floor_first,
+      Rcpp::Named("floor_iters") = floor_iters
    );
 }
