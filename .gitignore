@@ -7,3 +7,8 @@
 # study outputs: large fits and run logs stay out of git
 applications/results/fits/
 applications/results/logs/
+
+#  build artifacts and editor/OS state
+src/*.o
+src/*.so
+.Rproj.user/
