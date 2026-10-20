@@ -476,8 +476,11 @@ Rcpp::List var_precision_sampler(
       const double b_L  = 0.5,
       const double a_B  = 0.5,
       const double b_B  = 0.5,
-      const double as   = 0.1,
-      const double bs   = 0.1,
+      //  DP base measure Gamma(as, rate = bs).  Default moved from 0.1 to 1:
+      //  at 0.1 the base measure puts 33% of its mass below 1e-4 and the
+      //  idiosyncratic precisions collapse onto the 1e-8 floor.
+      const double as   = 1.0,
+      const double bs   = 1.0,
       const double a_dir= 0.1,
       const double b_dir= 0.1,
       const std::string dp_prior = "escobar_west",
@@ -750,8 +753,10 @@ Rcpp::List var_precision_sampler_rr(
       const double s_V2    = 1.0,            // ridge prior variance for V (if prior_B=="ridge")
       const double a_V     = 0.5,            // DL shape for V (if prior_B=="dl")
       const double b_V     = 0.5,            // DL rate  for V (if prior_B=="dl")
-      const double as      = 0.1,
-      const double bs      = 0.1,
+      //  DP base measure Gamma(as, rate = bs); default 1, as in the full-rank
+      //  sampler above.
+      const double as      = 1.0,
+      const double bs      = 1.0,
       const double a_dir   = 0.1,
       const double b_dir   = 0.1,
       const std::string dp_prior = "escobar_west",
