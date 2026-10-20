@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 .DS_Store
+
+# study outputs: large fits and run logs stay out of git
+applications/results/fits/
+applications/results/logs/
