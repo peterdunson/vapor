@@ -65,7 +65,7 @@ fit_glasso_oracle <- function(Y_input, Omega_true,
 
 # ── PrecFact ─────────────────────────────────────────────────────────────────
 fit_precfact <- function(Y_input, k=5) {
-   res <- prec_est(as=0.1, bs=0.1, a=0.5, b=0.5, k=k,
+   res <- prec_est(as=1.0, bs=1.0, a=0.5, b=0.5, k=k,
                    nrun=NRUN, thin=THIN, Y=scale(Y_input),
                    alldiff=0, a_dir=0.1, b_dir=0.1)
    fact_prec_processing(res, burnout=(NRUN/2)/THIN, alpha=0.1,
