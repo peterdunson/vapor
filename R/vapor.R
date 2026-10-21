@@ -104,7 +104,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
                   a_B = 0.5, b_B = 0.5,
                   prior_B = c("dl", "ridge"),
                   s_U2 = 1.0, s_V2 = 1.0,
-                  as = 0.1, bs = 0.1, a_dir = 0.1, b_dir = 0.1,
+                  as = 1.0, bs = 1.0, a_dir = 0.1, b_dir = 0.1,
                   dp_prior = c("escobar_west", "stirling_gamma"),
                   sg_a = 3.0, sg_b = 1.0, sg_m = 0,
                   init = c("random", "warm"), init_perturb = 0.15,
@@ -183,11 +183,14 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    #  bound, and the first such iteration (0 = never)
    fh <- as.integer(res$floor_hits); ff <- as.integer(res$floor_first)
    names(fh) <- names(ff) <- colnames(Y)
+   #  number of ITERATIONS in which at least one series was floored; this is
+   #  not recoverable from fh, whose per-series counts cannot be intersected
+   fi <- as.integer(res$floor_iters)
 
    out <- list(Lambda = Lambda, residual_prec = ps, B = B, Omega = Omega,
                V = V_kept, loglik = loglik,
                dir_prec = dir_prec, nclust = nclust,
-               floor_hits = fh, floor_first = ff,
+               floor_hits = fh, floor_first = ff, floor_iters = fi,
                dims = list(T = T_obs, p = p, k = k, lags = lags,
                            n_kept = length(keep)),
                settings = list(nrun = nrun, burn = burn, thin = thin,
