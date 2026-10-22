@@ -8,7 +8,8 @@ library(PrecFact)
 library(bayesianVARs)
 library(MASS)
 
-OUT <- "~/Desktop/precision_factor/PrecFact/external_testing/var_prec"
+OUT <- "/Users/peterdunson/Desktop/vapor/simulation/results/fits"
+dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 N_REPS <- 25
 NRUN   <- 5000

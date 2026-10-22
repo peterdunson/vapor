@@ -1,25 +1,68 @@
 # ============================================================================
-#  Simulation E: varying dimension p
-#  VAR(1) with Omega = Lambda_0 Lambda_0^T + I_p, Simulation A DGP
-#  25 replicates; paired per-replicate comparison against VAPOR
+#  Simulation F: reduced-rank VAPOR under approximately low-rank dynamics
+#  25 replicates; paired per-replicate comparison against VAPOR (dl, rank 3)
 # ============================================================================
 
 library(VAPOR)
-library(PrecFact)
 library(bayesianVARs)
 library(glasso)
 library(MASS)
+library(pheatmap)
+library(gridExtra)
+library(grid)
 
 #  in-repo copy; previously sourced from
 #  ~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R
 source("/Users/peterdunson/Desktop/vapor/simulation/simulate_data_fxns.R")
-OUT <- "~/Desktop/precision_factor/PrecFact/external_testing/var_prec"
 
-N_REPS <- 25
-NRUN   <- 5000
-THIN   <- 5
+R0           <- 3
+PERTURB_FRAC <- 0.05
+SPEC_RADIUS  <- 0.7
+FIT_RANKS    <- c(3)
+K_FACTORS    <- 5
+N_SEEDS      <- 25
+NRUN         <- 5000
+THIN         <- 5
 
-# ── Adaptive jitter, larger when T/p is small ────────────────────────────────
+REF_METHOD <- sprintf("VAPOR dl r=%d", FIT_RANKS[1])
+
+OUTDIR      <- "/Users/peterdunson/Desktop/vapor/simulation/results/fits"
+dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
+HEATMAP_DIR <- file.path("/Users/peterdunson/Desktop/vapor/simulation/results/figures", "sim_f_heatmaps")
+dir.create(HEATMAP_DIR, recursive = TRUE, showWarnings = FALSE)
+
+SETTINGS <- list(
+   list(p=50,  T=50,  block="T/p sweep + p sweep (anchor)"),
+   list(p=50,  T=75,  block="T/p sweep"),
+   list(p=50,  T=100, block="T/p sweep"),
+   list(p=100, T=100, block="p sweep"),
+   list(p=150, T=150, block="p sweep")
+)
+
+# ============================================================================
+#  DGP
+# ============================================================================
+
+simulate_lowrank_calibrated <- function(T, p, target_radius = SPEC_RADIUS,
+                                        k = K_FACTORS, pr = 0.15, val = 1.5,
+                                        r0 = R0, perturb_frac = PERTURB_FRAC, seed = NULL) {
+   if (!is.null(seed)) set.seed(seed)
+   lambda <- simulate_lambda_sparse(k, p, pr = pr, val = val)
+   Omega  <- tcrossprod(lambda) + diag(p)
+   Sigma  <- chol2inv(chol(Omega))
+   U0 <- matrix(rnorm(p * r0), p, r0); V0 <- matrix(rnorm(p * r0), p, r0)
+   B_lowrank <- U0 %*% t(V0)
+   N <- matrix(rnorm(p * p), p, p); N <- N * (perturb_frac * norm(B_lowrank,"F")/norm(N,"F"))
+   B <- B_lowrank + N
+   sr <- max(abs(eigen(B, only.values=TRUE)$values)); B <- B * (target_radius/sr)
+   Y <- matrix(0,T,p); e <- MASS::mvrnorm(T, rep(0,p), Sigma); Y[1,] <- e[1,]
+   for (t in 2:T) Y[t,] <- B %*% Y[t-1,] + e[t,]
+   sv <- svd(B)$d
+   list(Y=Y, B=B, Omega_true=Omega,
+        eff_rank_90 = which(cumsum(sv^2)/sum(sv^2) >= 0.90)[1],
+        n_edges = sum((Omega - diag(diag(Omega))) != 0)/2)
+}
+
 make_jitter <- function(Y, seed) {
    set.seed(seed)
    T_obs <- nrow(Y); p <- ncol(Y)
@@ -27,205 +70,214 @@ make_jitter <- function(Y, seed) {
    Y + matrix(rnorm(prod(dim(Y)), 0, sd_j), T_obs, p)
 }
 
-# ── Data generator ───────────────────────────────────────────────────────────
-#  At small p the 10% sparsity pattern can be acyclic, making B nilpotent with
-#  spectral radius 0; rescaling by target_radius/0 then yields Inf. Redraw B
-#  until the spectral radius is numerically positive.
-simulate_var1 <- function(T, p, target_radius=0.95, k=5,
-                          pr=0.2, val=1.5, seed=NULL) {
-   if (!is.null(seed)) set.seed(seed)
-   lambda <- simulate_lambda_sparse(k, p, pr=pr, val=val)
-   Omega  <- tcrossprod(lambda) + diag(p)
-   Sigma  <- chol2inv(chol(Omega))
-   n_nz   <- floor(0.1*p^2)
-   repeat {
-      B  <- matrix(0, p, p)
-      B[sample(p^2, n_nz)] <- rnorm(n_nz, 0, 0.3)
-      sr <- max(abs(eigen(B, only.values=TRUE)$values))
-      if (is.finite(sr) && sr > 1e-8) break
+to_pc <- function(Om) { pc <- -cov2cor(Om); diag(pc) <- NA; pc }
+
+b_rel_frob <- function(B_est, B_true) {
+   if (is.null(B_est)) return(NA)
+   p <- nrow(B_true)
+   cand <- list(B_est, t(B_est))
+   for (M in cand) {
+      if (nrow(M) == p && ncol(M) == p)      return(norm(M - B_true, "F") / norm(B_true, "F"))
+      if (nrow(M) == p + 1 && ncol(M) == p)  return(norm(M[1:p, ] - B_true, "F") / norm(B_true, "F"))
+      if (nrow(M) == p && ncol(M) == p + 1)  return(norm(M[, 1:p] - B_true, "F") / norm(B_true, "F"))
    }
-   B      <- B * (target_radius / sr)
-   Y      <- matrix(0, T, p)
-   eps    <- MASS::mvrnorm(T, rep(0,p), Sigma)
-   Y[1,]  <- eps[1,]
-   for (t in 2:T) Y[t,] <- B %*% Y[t-1,] + eps[t,]
-   list(Y=Y, B=B, Omega_true=Omega, Sigma_true=Sigma,
-        spectral_radius=max(abs(eigen(B, only.values=TRUE)$values)),
-        n_edges=sum((Omega - diag(diag(Omega))) != 0)/2)
+   NA
 }
 
-# ── Metrics (no rounding) ────────────────────────────────────────────────────
-compute_metrics <- function(Omega_est, P_est, Omega_true, method) {
-   G_true <- (Omega_true != 0)*1; diag(G_true) <- 0
-   G_est  <- P_est*1;             diag(G_est)  <- 0
-   TP <- sum(G_est==1 & G_true==1); FP <- sum(G_est==1 & G_true==0)
-   TN <- sum(G_est==0 & G_true==0); FN <- sum(G_est==0 & G_true==1)
-   data.frame(Method      = method,
-              Sensitivity = TP/(TP+FN),
-              Specificity = TN/(TN+FP),
-              Frobenius   = norm(cov2cor(Omega_est) - cov2cor(Omega_true), "F"))
+omega_metrics <- function(Omega_est, Omega_true) {
+   if (is.null(Omega_est)) return(c(Frob=NA, Sens=NA, Spec=NA))
+   frob <- norm(cov2cor(Omega_est) - cov2cor(Omega_true), "F")
+   ut <- upper.tri(Omega_true)
+   g_true <- (Omega_true[ut] != 0)
+   n_true <- sum(g_true)
+   pc_est <- abs(to_pc(Omega_est)); diag(pc_est) <- 0
+   vals   <- pc_est[ut]
+   thresh <- sort(vals, decreasing=TRUE)[n_true]
+   g_est  <- (vals >= thresh)
+   TP <- sum(g_est & g_true); FP <- sum(g_est & !g_true)
+   TN <- sum(!g_est & !g_true); FN <- sum(!g_est & g_true)
+   c(Frob=frob, Sens=TP/(TP+FN), Spec=TN/(TN+FP))
 }
 
-# ── Oracle Glasso ────────────────────────────────────────────────────────────
-fit_glasso_oracle <- function(Y_input, Omega_true,
-                              rho_grid=10^seq(-2, 0, length=20)) {
-   S <- cov(scale(Y_input)); best <- list(frob=Inf)
-   for (rho in rho_grid) {
-      gl <- tryCatch(glasso(S, rho=rho, penalize.diagonal=FALSE),
-                     error=function(e) NULL)
-      if (is.null(gl)) next
-      frob <- norm(cov2cor(gl$wi) - cov2cor(Omega_true), "F")
-      if (frob < best$frob) best <- list(Omega=gl$wi, P=(gl$wi!=0)*1, frob=frob)
+# ============================================================================
+#  fit all methods on one dataset
+# ============================================================================
+
+fit_all <- function(sim, p, seed) {
+   B_true <- sim$B
+   rows <- list()
+   pc_panels <- list(true = to_pc(sim$Omega_true))
+   
+   for (rk in FIT_RANKS) {
+      fit_dl <- vapor(sim$Y, lags=1, k=K_FACTORS, rank=rk, prior_B="dl",
+                      nrun=NRUN, burn=NRUN/2, thin=THIN, seed=seed)
+      fit_rg <- vapor(sim$Y, lags=1, k=K_FACTORS, rank=rk, prior_B="ridge",
+                      nrun=NRUN, burn=NRUN/2, thin=THIN, seed=seed)
+      B_dl <- apply(fit_dl$B, c(1,2), mean)
+      B_rg <- apply(fit_rg$B, c(1,2), mean)
+      
+      rows[[sprintf("VAPOR dl r=%d", rk)]] <-
+         c(omega_metrics(fit_dl$Omega, sim$Omega_true), B_Frob=b_rel_frob(B_dl, B_true))
+      rows[[sprintf("VAPOR ridge r=%d", rk)]] <-
+         c(omega_metrics(fit_rg$Omega, sim$Omega_true), B_Frob=b_rel_frob(B_rg, B_true))
+      
+      pc_panels[[sprintf("dl_r%d", rk)]] <- to_pc(fit_dl$Omega)
+      pc_panels[[sprintf("rg_r%d", rk)]] <- to_pc(fit_rg$Omega)
    }
-   best
-}
-
-# ── PrecFact ─────────────────────────────────────────────────────────────────
-fit_precfact <- function(Y_input, k=5) {
-   res <- prec_est(as=1.0, bs=1.0, a=0.5, b=0.5, k=k,
-                   nrun=NRUN, thin=THIN, Y=scale(Y_input),
-                   alldiff=0, a_dir=0.1, b_dir=0.1)
-   fact_prec_processing(res, burnout=(NRUN/2)/THIN, alpha=0.1,
-                        beta=0.85, epsilon_grid=seq(0.05,0.1,length=20))
-}
-
-# ── VAR residuals ────────────────────────────────────────────────────────────
-get_var_residuals <- function(Y, seed) {
-   Y_jit <- make_jitter(Y, seed)
-   mod   <- bvar(Y_jit, lags=1L, draws=2000, burnin=1000, quiet=TRUE)
-   B_hat <- apply(mod$PHI, c(1,2), mean)
-   list(resid=mod$Y - mod$X %*% B_hat)
-}
-
-# ── VAPOR ────────────────────────────────────────────────────────────────────
-fit_vapor <- function(Y, k=5, seed=99) {
-   has_init <- "init" %in% names(formals(vapor))
-   fit <- NULL
-   for (attempt in 0:2) {
-      Y_use <- if (attempt == 0) Y else make_jitter(Y, seed + 1000*attempt)
-      args  <- list(Y_use, lags=1, k=k, rank="full", prior_B="dl",
-                    nrun=NRUN, burn=NRUN/2, thin=THIN, seed=seed + attempt)
-      if (has_init) args$init <- "random"
-      fit <- tryCatch(do.call(vapor, args), error=function(e) NULL)
-      if (!is.null(fit)) break
-   }
-   if (is.null(fit)) stop("vapor failed after 3 attempts, seed ", seed)
-   res_like <- list(Lambda=fit$Lambda, residuals=fit$residual_prec)
-   out <- fact_prec_processing(res_like, burnout=0, alpha=0.1, beta=0.85,
-                               epsilon_grid=seq(0.05,0.1,length.out=20))
-   diag(out$P) <- 0; out
-}
-
-# ── Kastner ──────────────────────────────────────────────────────────────────
-fit_kastner <- function(Y, Omega_true, k=5, seed=99) {
-   Y_jit <- make_jitter(Y, seed)
-   p <- ncol(Y)
-   sigma_prior <- specify_prior_sigma(M=p, type="factor", factor_factors=k,
+   
+   # Kastner
+   sigma_prior <- specify_prior_sigma(M=p, type="factor", factor_factors=K_FACTORS,
                                       factor_priorfacloadtype="colwiseng",
                                       factor_heteroskedastic=TRUE, quiet=TRUE)
-   mod <- bvar(Y_jit, lags=1L, draws=2000, burnin=1000,
-               prior_sigma=sigma_prior, quiet=TRUE)
-   vc        <- vcov(mod)
-   Sigma_hat <- apply(vc[1,,,], c(1,2), mean)
-   Omega_hat <- solve(Sigma_hat)
-   G_true <- (Omega_true != 0)*1; diag(G_true) <- 0
-   n_true <- sum(G_true)/2
-   thresh <- quantile(abs(Omega_hat[upper.tri(Omega_hat)]),
-                      1 - n_true/choose(p,2))
-   list(Omega=Omega_hat, P=(abs(Omega_hat) > thresh)*1)
+   mod_k <- tryCatch(bvar(make_jitter(sim$Y, seed), lags=1L, draws=2000, burnin=1000,
+                          prior_sigma=sigma_prior, quiet=TRUE),
+                     error=function(e){cat("    Kastner failed\n"); NULL})
+   if (!is.null(mod_k)) {
+      Omega_kast <- solve(apply(vcov(mod_k)[1,,,], c(1,2), mean))
+      B_kast     <- apply(mod_k$PHI, c(1,2), mean)
+   } else { Omega_kast <- NULL; B_kast <- NULL }
+   rows[["Kastner"]] <- c(omega_metrics(Omega_kast, sim$Omega_true), B_Frob=NA)
+   
+   # Glasso
+   S <- cov(scale(sim$Y)); best <- list(frob=Inf, Omega=diag(p))
+   for (rho in 10^seq(-2.5,0,length=25)) {
+      gl <- tryCatch(glasso(S, rho=rho, penalize.diagonal=FALSE), error=function(e) NULL)
+      if (is.null(gl)) next
+      fr <- norm(cov2cor(gl$wi) - cov2cor(sim$Omega_true), "F")
+      if (fr < best$frob) best <- list(Omega=gl$wi, frob=fr)
+   }
+   Omega_glasso <- best$Omega
+   rows[["Glasso"]] <- c(omega_metrics(Omega_glasso, sim$Omega_true), B_Frob=NA)
+   
+   pc_panels[["kast"]]   <- if (is.null(Omega_kast)) matrix(NA,p,p) else to_pc(Omega_kast)
+   pc_panels[["glasso"]] <- to_pc(Omega_glasso)
+   
+   list(metrics = do.call(rbind, rows), pc = pc_panels)
 }
 
-# ── One replicate, all six methods ───────────────────────────────────────────
-run_one <- function(sim, seed, k=5) {
-   r <- list()
-   pf_raw <- fit_precfact(sim$Y, k=k)
-   r[[1]] <- compute_metrics(pf_raw$Omega, pf_raw$P, sim$Omega_true, "PrecFact (no VAR)")
-   gl_raw <- fit_glasso_oracle(sim$Y, sim$Omega_true)
-   r[[2]] <- compute_metrics(gl_raw$Omega, gl_raw$P, sim$Omega_true, "Glasso (no VAR)")
-   var_out <- get_var_residuals(sim$Y, seed)
-   gl_var  <- fit_glasso_oracle(var_out$resid, sim$Omega_true)
-   r[[3]] <- compute_metrics(gl_var$Omega, gl_var$P, sim$Omega_true, "VAR + Glasso")
-   pf_var  <- fit_precfact(var_out$resid, k=k)
-   r[[4]] <- compute_metrics(pf_var$Omega, pf_var$P, sim$Omega_true, "VAR + PrecFact")
-   vp <- fit_vapor(sim$Y, k=k, seed=seed)
-   r[[5]] <- compute_metrics(vp$Omega, vp$P, sim$Omega_true, "VAPOR")
-   ks <- fit_kastner(sim$Y, sim$Omega_true, k=k, seed=seed)
-   r[[6]] <- compute_metrics(ks$Omega, ks$P, sim$Omega_true, "Kastner (VAR+FSV)")
-   do.call(rbind, r)
-}
+# ============================================================================
+#  paired differences
+# ============================================================================
 
-# ── Summaries ────────────────────────────────────────────────────────────────
-summarize_reps <- function(rep_list, label) {
-   all_m <- do.call(rbind, rep_list)
-   do.call(rbind, lapply(unique(all_m$Method), function(m) {
-      s <- all_m[all_m$Method == m, ]
+paired_diffs <- function(seed_metrics, label, ref = REF_METHOD) {
+   fr <- t(sapply(seed_metrics, function(M) M[, "Frob"]))   # seeds x methods
+   v  <- fr[, ref]
+   do.call(rbind, lapply(setdiff(colnames(fr), ref), function(m) {
+      d <- fr[, m] - v                                      # positive favours VAPOR
+      d <- d[is.finite(d)]
+      n <- length(d)
+      if (n < 2) return(NULL)
+      se <- sd(d)/sqrt(n); tt <- mean(d)/se
       data.frame(Scenario=label, Method=m,
-                 Sens=sprintf("%.3f (%.3f)", mean(s$Sensitivity), sd(s$Sensitivity)),
-                 Spec=sprintf("%.3f (%.3f)", mean(s$Specificity), sd(s$Specificity)),
-                 Frob=sprintf("%.3f (%.3f)", mean(s$Frobenius),   sd(s$Frobenius)))
-   }))
-}
-
-paired_diffs <- function(rep_list, label) {
-   fr <- t(sapply(rep_list, function(d) setNames(d$Frobenius, d$Method)))
-   v  <- fr[, "VAPOR"]
-   do.call(rbind, lapply(setdiff(colnames(fr), "VAPOR"), function(m) {
-      d <- fr[, m] - v                           # positive favours VAPOR
-      n <- length(d); se <- sd(d)/sqrt(n); tt <- mean(d)/se
-      data.frame(Scenario=label, Method=m,
-                 Diff=round(mean(d), 3), SE=round(se, 3),
-                 t=round(tt, 2),
+                 Diff=round(mean(d), 3), SE=round(se, 3), t=round(tt, 2),
                  p=format.pval(2*pt(-abs(tt), df=n-1), digits=2, eps=1e-4),
                  Wins=sprintf("%d / %d", sum(d > 0), n))
    }))
 }
 
 # ============================================================================
-#  Run: rho(B)=0.95, val=1.5, dimension varying
+#  heatmap panel builder
 # ============================================================================
-settings <- list(
-   list(p=10,  k=2,  pr=0.25, T=200, label="p=10,  k=2"),
-   list(p=20,  k=5,  pr=0.20, T=200, label="p=20,  k=5"),
-   list(p=50,  k=8,  pr=0.08, T=200, label="p=50,  k=8"),
-   list(p=100, k=12, pr=0.04, T=500, label="p=100, k=12")
-)
 
-res_E   <- list()
-edges_E <- list()
+pal  <- colorRampPalette(c("blue","white","red"))(100)
+brks <- seq(-1, 1, length.out = 101)
+mk <- function(pc, title, legend=FALSE)
+   pheatmap(pc, main=title, cluster_rows=FALSE, cluster_cols=FALSE,
+            color=pal, breaks=brks, na_col="grey90",
+            show_rownames=FALSE, show_colnames=FALSE, legend=legend, silent=TRUE)$gtable
 
-for (s in settings) {
-   cat(sprintf("\n=== %s | T=%d ===\n", s$label, s$T))
-   reps <- vector("list", N_REPS)
-   ne   <- numeric(N_REPS)
-   for (r in seq_len(N_REPS)) {
-      cat(sprintf("\r  rep %d/%d", r, N_REPS)); flush.console()
-      sim <- simulate_var1(T=s$T, p=s$p, target_radius=0.95,
-                           k=s$k, pr=s$pr, val=1.5, seed=r)
-      ne[r] <- sim$n_edges
-      reps[[r]] <- run_one(sim, seed=r, k=s$k)
+save_heatmap <- function(pcs, tag, outfile) {
+   panels <- list(mk(pcs$true, "TRUE"))
+   for (rk in FIT_RANKS) {
+      panels[[length(panels)+1]] <- mk(pcs[[sprintf("dl_r%d", rk)]], sprintf("VAPOR dl r=%d", rk))
+      panels[[length(panels)+1]] <- mk(pcs[[sprintf("rg_r%d", rk)]], sprintf("VAPOR ridge r=%d", rk))
    }
-   cat("\n")
-   res_E[[s$label]]   <- reps
-   edges_E[[s$label]] <- ne
-   cat(sprintf("  mean true edges: %.1f\n", mean(ne)))
-   saveRDS(res_E, file.path(path.expand(OUT), "sim_E_partial.rds"))
+   panels[[length(panels)+1]] <- mk(pcs$kast, "Kastner")
+   panels[[length(panels)+1]] <- mk(pcs$glasso, "Glasso", legend=TRUE)
+   ncol <- length(panels)
+   png(outfile, width=380*ncol, height=450)
+   grid.arrange(grobs=panels, ncol=ncol, top=textGrob(tag, gp=gpar(fontsize=15, fontface="bold")))
+   dev.off()
 }
 
-summary_E <- do.call(rbind, lapply(names(res_E), function(l) summarize_reps(res_E[[l]], l)))
-paired_E  <- do.call(rbind, lapply(names(res_E), function(l) paired_diffs(res_E[[l]], l)))
+# ============================================================================
+#  run
+# ============================================================================
 
-edge_tab <- data.frame(Scenario  = names(edges_E),
-                       MeanEdges = round(sapply(edges_E, mean), 1),
-                       SD        = round(sapply(edges_E, sd), 1))
+all_rows   <- list()
+all_paired <- list()
+raw_F      <- list()
 
-cat("\n--- Simulation E: mean (sd) over", N_REPS, "replicates ---\n")
-print(summary_E, row.names=FALSE)
-cat("\n--- Paired Frobenius differences vs VAPOR (positive favours VAPOR) ---\n")
-print(paired_E, row.names=FALSE)
-cat("\n--- True edge counts by scenario ---\n")
-print(edge_tab, row.names=FALSE)
+for (s in SETTINGS) {
+   p <- s$p; Tval <- s$T
+   label <- sprintf("p=%d, T=%d", p, Tval)
+   cat(sprintf("\n=== %s  (T/p=%.1f)  [%s] ===\n", label, Tval/p, s$block))
+   
+   seed_metrics <- vector("list", N_SEEDS)
+   for (sd_i in seq_len(N_SEEDS)) {
+      cat(sprintf("\r  seed %d/%d", sd_i, N_SEEDS)); flush.console()
+      sim <- simulate_lowrank_calibrated(T=Tval, p=p, seed=sd_i)
+      if (sd_i == 1)
+         cat(sprintf("\n    (Omega edges=%d | B eff rank@90%%=%d | true rank=%d)\n",
+                     sim$n_edges, sim$eff_rank_90, qr(sim$B)$rank))
+      f <- fit_all(sim, p, seed=sd_i)
+      seed_metrics[[sd_i]] <- f$metrics
+      
+      if (sd_i == 1) {
+         tag <- sprintf("p=%d  T=%d  (T/p=%.1f)", p, Tval, Tval/p)
+         outfile <- file.path(HEATMAP_DIR, sprintf("sim_f_heatmap_p%d_T%d.png", p, Tval))
+         save_heatmap(f$pc, tag, outfile)
+         cat(sprintf("    heatmap -> %s\n", outfile))
+      }
+   }
+   cat("\n")
+   raw_F[[label]] <- seed_metrics
+   
+   methods <- rownames(seed_metrics[[1]])
+   cols    <- colnames(seed_metrics[[1]])
+   agg <- sapply(cols, function(cc)
+      sapply(methods, function(mm)
+         mean(sapply(seed_metrics, function(M) M[mm, cc]), na.rm=TRUE)))
+   agg_sd <- sapply(cols, function(cc)
+      sapply(methods, function(mm)
+         sd(sapply(seed_metrics, function(M) M[mm, cc]), na.rm=TRUE)))
+   
+   ms <- function(cc) ifelse(is.na(agg[,cc]), "--",
+                             sprintf("%.3f (%.3f)", agg[,cc], agg_sd[,cc]))
+   disp <- data.frame(Method=methods, Omega_Frob=ms("Frob"), B_Frob=ms("B_Frob"),
+                      Sens=ms("Sens"), Spec=ms("Spec"))
+   cat(sprintf("  RESULTS %s, mean (sd) over %d replicates:\n", label, N_SEEDS))
+   print(disp, row.names=FALSE)
+   
+   pd <- paired_diffs(seed_metrics, label)
+   cat(sprintf("\n  Paired Omega-Frobenius differences vs %s (positive favours VAPOR):\n", REF_METHOD))
+   print(pd, row.names=FALSE)
+   all_paired[[length(all_paired)+1]] <- pd
+   
+   for (mm in methods)
+      all_rows[[length(all_rows)+1]] <- data.frame(
+         p=p, T=Tval, TP_ratio=round(Tval/p,2), block=s$block, Method=mm,
+         Omega_Frob=agg[mm,"Frob"],     Omega_Frob_sd=agg_sd[mm,"Frob"],
+         B_Frob=agg[mm,"B_Frob"],       B_Frob_sd=agg_sd[mm,"B_Frob"],
+         Sens=agg[mm,"Sens"],           Sens_sd=agg_sd[mm,"Sens"],
+         Spec=agg[mm,"Spec"],           Spec_sd=agg_sd[mm,"Spec"])
+   
+   saveRDS(list(results=do.call(rbind, all_rows),
+                paired=do.call(rbind, all_paired), raw=raw_F),
+           file.path(OUTDIR, "sim_f_partial.rds"))
+}
 
-saveRDS(list(raw=res_E, summary=summary_E, paired=paired_E,
-             edges=edges_E, edge_summary=edge_tab, n_reps=N_REPS),
-        file.path(path.expand(OUT), "sim_E_results.rds"))
-cat("\nSaved to sim_E_results.rds\n")
+results <- do.call(rbind, all_rows)
+paired  <- do.call(rbind, all_paired)
+
+cat("\n============================================================\n")
+cat("FULL RESULTS TABLE\n")
+cat("============================================================\n")
+print(results, row.names=FALSE, digits=3)
+cat("\n--- Paired Omega-Frobenius differences vs", REF_METHOD, "---\n")
+print(paired, row.names=FALSE)
+
+saveRDS(list(results=results, paired=paired, raw=raw_F, settings=SETTINGS,
+             n_seeds=N_SEEDS, fit_ranks=FIT_RANKS, r0=R0, k=K_FACTORS),
+        file.path(OUTDIR, "sim_f_final_results.rds"))
+cat(sprintf("\nSaved results + %d heatmaps to %s\n", length(SETTINGS), OUTDIR))

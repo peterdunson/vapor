@@ -13,7 +13,7 @@ options(width = 200)
 CFG <- list(
    LABEL = "FRED-QD p = 100, rank 3",
    P     = 100L,
-   CSV   = "~/Desktop/2026-05-qd.csv",
+   CSV   = "/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv",
    OUT   = FITS_DIR,
    OUT_RDS = "p100_final.rds",
    #  the figure scripts read this name, so the pipeline writes it too

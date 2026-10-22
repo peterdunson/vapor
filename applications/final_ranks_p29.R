@@ -18,7 +18,7 @@ options(width = 200)
 CFG <- list(
    LABEL = "p = 29 rank and k table",
    P = 29L,
-   CSV = "~/Desktop/2026-05-qd.csv",
+   CSV = "/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv",
    OUT = FITS_DIR,
    OUT_RDS = "ranks_p29_final.rds",
 

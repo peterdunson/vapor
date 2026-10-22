@@ -14,7 +14,7 @@ options(width = 200)
 CFG <- list(
    LABEL = "FRED-QD p = 29, rank 3",
    P     = 29L,
-   CSV   = "~/Desktop/2026-05-qd.csv",
+   CSV   = "/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv",
    OUT   = FITS_DIR,
    OUT_RDS = "p29_final.rds",
    FIG_RDS = "p29_results.rds",

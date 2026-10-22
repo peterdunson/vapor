@@ -13,7 +13,8 @@ library(MASS)
 #  in-repo copy; previously sourced from
 #  ~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R
 source("/Users/peterdunson/Desktop/vapor/simulation/simulate_data_fxns.R")
-OUT <- "~/Desktop/precision_factor/PrecFact/external_testing/var_prec"
+OUT <- "/Users/peterdunson/Desktop/vapor/simulation/results/fits"
+dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 N_REPS <- 25
 NRUN   <- 5000

@@ -21,7 +21,7 @@ if (!DIM %in% c(29L, 100L)) stop("usage: Rscript final_sweeps.R <29|100>")
 CFG <- list(
    LABEL = sprintf("sensitivity sweeps, p = %d", DIM),
    P = DIM,
-   CSV = "~/Desktop/2026-05-qd.csv",
+   CSV = "/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv",
    OUT = FITS_DIR,
    OUT_RDS  = sprintf("sweeps_p%d_final.rds", DIM),
    BASE_RDS = sprintf("p%d_final.rds", DIM),   # panel, held-out sets, and the reused chains

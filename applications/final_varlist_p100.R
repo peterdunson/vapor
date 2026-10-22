@@ -14,7 +14,7 @@ options(width = 200)
 #  fredqd_groups.csv so this script depends on nothing outside the repo.
 DESCCSV <- file.path(dirname(RES_DIR), "varlist_descriptions.csv")
 GROUPS  <- file.path(dirname(RES_DIR), "fredqd_groups.csv")
-CSV     <- "~/Desktop/2026-05-qd.csv"
+CSV     <- "/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv"
 OUTTEX  <- file.path(TAB_DIR, "varlist_p100.tex")
 
 R  <- readRDS(file.path(FITS_DIR, "p100_final.rds"))

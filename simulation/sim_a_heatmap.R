@@ -9,7 +9,8 @@ library(glasso); library(MASS); library(ggplot2); library(scales)
 #  in-repo copy; previously sourced from
 #  ~/Desktop/precision_factor/PrecFact/vignettes/simulate_data_fxns.R
 source("/Users/peterdunson/Desktop/vapor/simulation/simulate_data_fxns.R")
-OUT <- "~/Desktop/precision_factor/PrecFact/external_testing/var_prec"
+OUT <- "/Users/peterdunson/Desktop/vapor/simulation/results/figures"
+dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
 
 REP     <- 1        # which replicate to display
 NRUN    <- 5000
