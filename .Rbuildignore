@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^applications$
+^simulation$
+^\.DS_Store$
+^\.Rhistory$

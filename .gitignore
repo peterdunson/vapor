@@ -1,14 +1,25 @@
-.Rproj.user
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
 .DS_Store
 
-# study outputs: large fits and run logs stay out of git
-applications/results/fits/
-applications/results/logs/
-
-#  build artifacts and editor/OS state
+#  build artifacts
 src/*.o
 src/*.so
-.Rproj.user/
+
+#  Stage outputs that run_all.sh regenerates: large fits, caches and run logs.
+#  Listed as <dir>/* rather than <dir>/ so the four exceptions below can be
+#  negated -- git cannot re-include a file whose parent DIRECTORY is excluded.
+applications/results/fits/*
+applications/results/logs/*
+simulation/results/fits/*
+simulation/results/logs/*
+simulation/results/sim_f_parts/*
+
+#  ...except these four, which are INPUTS, not outputs.  Nothing in the
+#  repository regenerates them, and run_all.sh stops without them.
+!applications/results/fits/reused_p29.rds
+!applications/results/fits/reused_p100.rds
+!applications/results/fits/kastner_p100_20k.rds
+!applications/results/fits/kastner_p100_20k_draws.rds
