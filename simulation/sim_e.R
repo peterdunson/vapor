@@ -1,5 +1,5 @@
 # ============================================================================
-#  Simulation F: reduced-rank VAPOR under approximately low-rank dynamics
+#  Simulation E: reduced-rank VAPOR under approximately low-rank dynamics
 #  25 replicates; paired per-replicate comparison against VAPOR (dl, rank 3)
 # ============================================================================
 
@@ -28,7 +28,7 @@ REF_METHOD <- sprintf("VAPOR dl r=%d", FIT_RANKS[1])
 
 OUTDIR      <- "/Users/peterdunson/Desktop/vapor/simulation/results/fits"
 dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
-HEATMAP_DIR <- file.path("/Users/peterdunson/Desktop/vapor/simulation/results/figures", "sim_f_heatmaps")
+HEATMAP_DIR <- file.path("/Users/peterdunson/Desktop/vapor/simulation/results/figures", "sim_e_heatmaps")
 dir.create(HEATMAP_DIR, recursive = TRUE, showWarnings = FALSE)
 
 SETTINGS <- list(
@@ -206,7 +206,7 @@ save_heatmap <- function(pcs, tag, outfile) {
 
 all_rows   <- list()
 all_paired <- list()
-raw_F      <- list()
+raw_E      <- list()
 
 for (s in SETTINGS) {
    p <- s$p; Tval <- s$T
@@ -225,13 +225,13 @@ for (s in SETTINGS) {
       
       if (sd_i == 1) {
          tag <- sprintf("p=%d  T=%d  (T/p=%.1f)", p, Tval, Tval/p)
-         outfile <- file.path(HEATMAP_DIR, sprintf("sim_f_heatmap_p%d_T%d.png", p, Tval))
+         outfile <- file.path(HEATMAP_DIR, sprintf("sim_e_heatmap_p%d_T%d.png", p, Tval))
          save_heatmap(f$pc, tag, outfile)
          cat(sprintf("    heatmap -> %s\n", outfile))
       }
    }
    cat("\n")
-   raw_F[[label]] <- seed_metrics
+   raw_E[[label]] <- seed_metrics
    
    methods <- rownames(seed_metrics[[1]])
    cols    <- colnames(seed_metrics[[1]])
@@ -263,8 +263,8 @@ for (s in SETTINGS) {
          Spec=agg[mm,"Spec"],           Spec_sd=agg_sd[mm,"Spec"])
    
    saveRDS(list(results=do.call(rbind, all_rows),
-                paired=do.call(rbind, all_paired), raw=raw_F),
-           file.path(OUTDIR, "sim_f_partial.rds"))
+                paired=do.call(rbind, all_paired), raw=raw_E),
+           file.path(OUTDIR, "sim_e_partial.rds"))
 }
 
 results <- do.call(rbind, all_rows)
@@ -277,7 +277,7 @@ print(results, row.names=FALSE, digits=3)
 cat("\n--- Paired Omega-Frobenius differences vs", REF_METHOD, "---\n")
 print(paired, row.names=FALSE)
 
-saveRDS(list(results=results, paired=paired, raw=raw_F, settings=SETTINGS,
+saveRDS(list(results=results, paired=paired, raw=raw_E, settings=SETTINGS,
              n_seeds=N_SEEDS, fit_ranks=FIT_RANKS, r0=R0, k=K_FACTORS),
-        file.path(OUTDIR, "sim_f_final_results.rds"))
+        file.path(OUTDIR, "sim_e_final_results.rds"))
 cat(sprintf("\nSaved results + %d heatmaps to %s\n", length(SETTINGS), OUTDIR))

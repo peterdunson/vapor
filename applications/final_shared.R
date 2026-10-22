@@ -33,7 +33,19 @@ FIG_DIR  <- file.path(RES_DIR, "figures")
 TAB_DIR  <- file.path(RES_DIR, "tables")
 FITS_DIR <- file.path(RES_DIR, "fits")
 LOG_DIR  <- file.path(RES_DIR, "logs")
-for (d in c(FIG_DIR, TAB_DIR, FITS_DIR, LOG_DIR))
+#  Simulation code and simulation output live under simulation/; the tree above
+#  holds only the two empirical applications.  The one file both halves write is
+#  results_summary.md, which stays in TAB_DIR because it is a single combined
+#  summary of the paper.
+SIM_DIR   <- "/Users/peterdunson/Desktop/vapor/simulation"
+SIM_RES   <- file.path(SIM_DIR, "results")
+SIM_FIG   <- file.path(SIM_RES, "figures")
+SIM_TAB   <- file.path(SIM_RES, "tables")
+SIM_FITS  <- file.path(SIM_RES, "fits")
+SIM_LOG   <- file.path(SIM_RES, "logs")
+SIM_PARTS <- file.path(SIM_RES, "sim_f_parts")
+for (d in c(FIG_DIR, TAB_DIR, FITS_DIR, LOG_DIR,
+            SIM_FIG, SIM_TAB, SIM_FITS, SIM_LOG, SIM_PARTS))
    if (!dir.exists(d)) dir.create(d, recursive = TRUE)
 
 # ============================================================================

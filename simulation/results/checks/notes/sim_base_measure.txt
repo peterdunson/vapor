@@ -1,0 +1,68 @@
+VAPOR library: /Users/peterdunson/Desktop/vapor/.Rlib_p29/VAPOR
+
+================ sim_a ================
+  sim_a: evaluated 22 top-level definition(s) before the first loop
+  replicate 1, rho=0.10, p=20, T=200 | k=5 rank=full | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         7.595e-01        0       0               0                   0    1.019       1.001          114 0.6512  ||R-R0||_F    0.11
+             as = bs = 1         7.908e-01        0       0               0                   0    1.020       1.001          120 0.6530  ||R-R0||_F    0.10
+
+================ sim_b ================
+  sim_b: evaluated 24 top-level definition(s) before the first loop
+  replicate 1, rho=0.10, p=20, T=200 | k=5 rank=full | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         9.724e-04        0       0               0                   0    1.832       1.010            1 0.8400  ||R-R0||_F     0.1
+             as = bs = 1         1.066e-02        0       0               0                   0    1.093       1.002           16 0.7799  ||R-R0||_F     0.1
+
+================ sim_c ================
+  sim_c: evaluated 22 top-level definition(s) before the first loop
+  replicate 1, sparsity=0.01, p=20, T=200 | k=5 rank=full | nrun 5000 burn 2500 thin 5 | metric held-out MSPE
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric   metric_name minutes
+ as = bs = 0.1 (default)         1.118e-03        0       0               0                   0    1.332       1.005            2 0.8391 held-out MSPE    0.08
+             as = bs = 1         4.999e-03        0       0               0                   0    1.303       1.001            3 0.8409 held-out MSPE    0.07
+
+================ sim_d ================
+  sim_d: evaluated 24 top-level definition(s) before the first loop
+  replicate 1, val=0.5, p=20, T=200 | k=5 rank=full | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         8.292e-01        0       0               0                   0    1.023       1.001           82 0.4902  ||R-R0||_F    0.09
+             as = bs = 1         8.281e-01        0       0               0                   0    1.020       1.001          131 0.4831  ||R-R0||_F    0.10
+
+================ sim_e ================
+  sim_e: evaluated 24 top-level definition(s) before the first loop
+  replicate 1, p=10,  k=2, T=200 | k=2 rank=full | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         7.111e-01        0       0               0                   0    1.013           1          234 0.1946  ||R-R0||_F    0.02
+             as = bs = 1         6.261e-01        0       0               0                   0    1.011           1          183 0.1929  ||R-R0||_F    0.02
+
+================ sim_f ================
+  sim_f: evaluated 35 top-level definition(s) before the first loop
+  replicate 1, p=50, T=50 | k=5 rank=3 | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         9.035e-01        0       0               0                   0    1.049       1.002           44 4.2896  ||R-R0||_F    0.07
+             as = bs = 1         3.799e-01        0       0               0                   0    1.094       1.002           10 4.2695  ||R-R0||_F    0.07
+
+================ sim_g ================
+  sim_g: evaluated 35 top-level definition(s) before the first loop
+  replicate 1, p=50, T=35 | k=5 rank=3 | nrun 5000 burn 2500 thin 5 | metric ||R-R0||_F
+            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric metric_name minutes
+ as = bs = 0.1 (default)         7.479e-01        0       0               0                   0    1.061       1.001           21 4.4147  ||R-R0||_F    0.07
+             as = bs = 1         5.920e-01        0       0               0                   0    1.038       1.001           51 4.3963  ||R-R0||_F    0.07
+
+
+=== all seven scripts, one row per fit ===
+ script                    setting            base_measure min_residual_prec at_floor lt_1e_6 iters_any_floor series_ever_floored max_Rhat median_Rhat min_bulk_ESS metric   metric_name
+  sim_a      rho=0.10, p=20, T=200 as = bs = 0.1 (default)         7.595e-01        0       0               0                   0    1.019       1.001          114 0.6512    ||R-R0||_F
+  sim_a      rho=0.10, p=20, T=200             as = bs = 1         7.908e-01        0       0               0                   0    1.020       1.001          120 0.6530    ||R-R0||_F
+  sim_b      rho=0.10, p=20, T=200 as = bs = 0.1 (default)         9.724e-04        0       0               0                   0    1.832       1.010            1 0.8400    ||R-R0||_F
+  sim_b      rho=0.10, p=20, T=200             as = bs = 1         1.066e-02        0       0               0                   0    1.093       1.002           16 0.7799    ||R-R0||_F
+  sim_c sparsity=0.01, p=20, T=200 as = bs = 0.1 (default)         1.118e-03        0       0               0                   0    1.332       1.005            2 0.8391 held-out MSPE
+  sim_c sparsity=0.01, p=20, T=200             as = bs = 1         4.999e-03        0       0               0                   0    1.303       1.001            3 0.8409 held-out MSPE
+  sim_d       val=0.5, p=20, T=200 as = bs = 0.1 (default)         8.292e-01        0       0               0                   0    1.023       1.001           82 0.4902    ||R-R0||_F
+  sim_d       val=0.5, p=20, T=200             as = bs = 1         8.281e-01        0       0               0                   0    1.020       1.001          131 0.4831    ||R-R0||_F
+  sim_e          p=10,  k=2, T=200 as = bs = 0.1 (default)         7.111e-01        0       0               0                   0    1.013       1.000          234 0.1946    ||R-R0||_F
+  sim_e          p=10,  k=2, T=200             as = bs = 1         6.261e-01        0       0               0                   0    1.011       1.000          183 0.1929    ||R-R0||_F
+  sim_f                 p=50, T=50 as = bs = 0.1 (default)         9.035e-01        0       0               0                   0    1.049       1.002           44 4.2896    ||R-R0||_F
+  sim_f                 p=50, T=50             as = bs = 1         3.799e-01        0       0               0                   0    1.094       1.002           10 4.2695    ||R-R0||_F
+  sim_g                 p=50, T=35 as = bs = 0.1 (default)         7.479e-01        0       0               0                   0    1.061       1.001           21 4.4147    ||R-R0||_F
+  sim_g                 p=50, T=35             as = bs = 1         5.920e-01        0       0               0                   0    1.038       1.001           51 4.3963    ||R-R0||_F
