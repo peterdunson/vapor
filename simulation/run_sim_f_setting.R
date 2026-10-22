@@ -14,6 +14,7 @@ A <- commandArgs(trailingOnly = TRUE)
 P <- as.integer(A[1]); TT <- as.integer(A[2])
 SRC  <- "/Users/peterdunson/Desktop/vapor/simulation/sim_f.R"
 PART <- sprintf("/Users/peterdunson/Desktop/vapor/simulation/results/sim_f_parts/sim_f_part_p%d_T%d.rds", P, TT)
+dir.create(dirname(PART), recursive = TRUE, showWarnings = FALSE)
 t0 <- Sys.time()
 cat(sprintf("VAPOR %s | as = %s, bs = %s | setting p = %d, T = %d | start %s\n",
             as.character(utils::packageVersion("VAPOR")),

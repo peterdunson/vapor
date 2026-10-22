@@ -151,8 +151,8 @@ double rgig(double lambda, double chi, double psi) {
    if (!(R_FINITE(lambda) && R_FINITE(chi) && R_FINITE(psi)) ||
        (chi < 0. || psi < 0) || (chi == 0. && lambda <= 0.) ||
        (psi == 0. && lambda >= 0.)) {
-      printf("lambda=%lf, chi=%lf, psi=%lf\n", lambda, chi, psi);
-      Rcpp::stop("invalid parameters for GIG distribution!");
+      Rcpp::stop("invalid parameters for GIG distribution: lambda=%f, chi=%f, psi=%f",
+                 lambda, chi, psi);
    }
    res = (double *)malloc(n * sizeof(double));
    if (chi < ZTOL) {
