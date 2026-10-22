@@ -25,12 +25,26 @@ for (q in parse(SRC)){
    try(eval(q, envir = e), silent = TRUE) }
 for (nm in ls(e)) assign(nm, get(nm, envir = e), envir = globalenv())
 label <- sprintf("p=%d, T=%d", P, TT)
+#  Resume support.  Each replicate is seeded from sd_i alone, so a replicate
+#  computed in an earlier process is bit-identical to the same replicate
+#  computed now; the per-replicate cache below therefore changes nothing about
+#  the results, only how much has to be recomputed after an interruption.
+CACHE <- sub("[.]rds$", "_seeds.rds", PART)
 sm <- vector("list", N_SEEDS)
+if (file.exists(CACHE)){
+   old <- readRDS(CACHE)
+   for (k in seq_len(N_SEEDS)) if (!is.null(old[[k]])) sm[[k]] <- old[[k]]
+   cat(sprintf("resuming: %d of %d replicates already saved in %s\n",
+               sum(!vapply(sm, is.null, logical(1))), N_SEEDS, basename(CACHE))) }
 for (sd_i in seq_len(N_SEEDS)){
-   cat(sprintf("\r  seed %d/%d", sd_i, N_SEEDS)); flush.console()
+   if (!is.null(sm[[sd_i]])) next
+   ts <- Sys.time()
    sim <- simulate_lowrank_calibrated(T = TT, p = P, seed = sd_i)
-   sm[[sd_i]] <- fit_all(sim, P, seed = sd_i)$metrics }
-cat("\n")
+   sm[[sd_i]] <- fit_all(sim, P, seed = sd_i)$metrics
+   saveRDS(sm, CACHE)                      # save after EVERY replicate
+   cat(sprintf("  seed %d/%d done in %.1f min (%s)\n", sd_i, N_SEEDS,
+               as.numeric(difftime(Sys.time(), ts, units = "mins")),
+               format(Sys.time(), "%H:%M:%S"))); flush.console() }
 methods <- rownames(sm[[1]]); cols <- colnames(sm[[1]])
 mn <- outer(methods, cols, Vectorize(function(mm, cc)
    mean(sapply(sm, function(M) M[mm, cc]), na.rm = TRUE)))

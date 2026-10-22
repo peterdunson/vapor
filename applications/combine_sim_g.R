@@ -7,12 +7,12 @@
 # ============================================================================
 PARTS <- "/Users/peterdunson/Desktop/vapor/simulation/sim_g_parts"
 OUT   <- "/Users/peterdunson/Desktop/vapor/simulation/sim_g_parts/sim_g_results.rds"
-WANT  <- list(c(50,35), c(100,70), c(150,105), c(200,140))
+WANT  <- list(c(50,35), c(100,70), c(150,105))   # p = 200 dropped
 fs <- vapply(WANT, function(z)
    file.path(PARTS, sprintf("sim_g_part_p%d_T%d.rds", z[1], z[2])), character(1))
 have <- file.exists(fs)
 if (!all(have))
-   stop(sprintf("missing %d of 4 parts: %s", sum(!have),
+   stop(sprintf("missing %d of 3 parts: %s", sum(!have),
                 paste(basename(fs[!have]), collapse = ", ")))
 Z <- lapply(fs, readRDS)
 tm <- do.call(rbind, lapply(Z, function(z) data.frame(

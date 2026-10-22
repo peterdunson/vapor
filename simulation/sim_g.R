@@ -30,11 +30,12 @@ OUTDIR      <- path.expand("~/Desktop/precision_factor/PrecFact/external_testing
 HEATMAP_DIR <- file.path(OUTDIR, "sim_g_heatmaps")
 dir.create(HEATMAP_DIR, recursive = TRUE, showWarnings = FALSE)
 
+#  p = 200, T = 140 was dropped: it ran 17 h to replicate 19 of 25 and was
+#  cancelled.  Simulation F is reported on three dimensions.
 SETTINGS <- list(
    list(p=50,  T=35,  block="T<p sweep (T/p=0.7)"),
    list(p=100, T=70,  block="T<p sweep (T/p=0.7)"),
-   list(p=150, T=105, block="T<p sweep (T/p=0.7)"),
-   list(p=200, T=140, block="T<p sweep (T/p=0.7)")
+   list(p=150, T=105, block="T<p sweep (T/p=0.7)")
 )
 
 # ============================================================================
