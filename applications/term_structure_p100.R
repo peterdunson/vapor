@@ -16,7 +16,7 @@ RATES <- c("FEDFUNDS","TB3MS","GS1","GS5","GS10","MORTGAGE30US")
 SHOW  <- RATES                                  # full names on both panels
 
 # -- rebuild the training panel ---------------------------------------------
-raw <- read.csv("~/Desktop/2026-05-qd.csv")
+raw <- read.csv("/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv")
 tf <- function(x, tcode){ x <- as.numeric(x)
 switch(as.character(tcode),"1"=x,"2"=c(NA,diff(x)),"3"=c(NA,NA,diff(diff(x))),
        "4"=log(x),"5"=c(NA,diff(log(x))),"6"=c(NA,NA,diff(diff(log(x)))), x) }
