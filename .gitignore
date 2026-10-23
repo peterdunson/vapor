@@ -8,6 +8,11 @@
 src/*.o
 src/*.so
 
+#  knitr figure output: `figure/` lands in whatever directory the vignette is
+#  knitted from, so both the repo root and vignettes/ are covered.
+figure/
+vignettes/figure/
+
 #  Stage outputs that run_all.sh regenerates: large fits, caches and run logs.
 #  Listed as <dir>/* rather than <dir>/ so the four exceptions below can be
 #  negated -- git cannot re-include a file whose parent DIRECTORY is excluded.

@@ -285,9 +285,11 @@ void sample_B(arma::mat &B, const arma::mat &Y, const arma::mat &X,
 // Generic DL-hyperparameter update. Works on ANY matrix shape: called with
 // full B (p x Kx) for the full-rank sampler, and with V (Kx x r) for the
 // reduced-rank sampler's DL option. No modification needed either way.
+//  tau_B carries the FIXED global scale (b_B for the full B, b_V for V); it is
+//  not updated, so no rate argument is needed here.
 void update_B_params(arma::mat &B, arma::mat &T_phi_B,
                      arma::mat &Plam_B, arma::vec &tau_B,
-                     const double a_B, const double b_B) {
+                     const double a_B) {
    const unsigned p  = B.n_rows;
    const unsigned Kx = B.n_cols;
    
@@ -474,6 +476,9 @@ Rcpp::List var_precision_sampler(
       const int thin    = 5,
       const double a_L  = 0.5,
       const double b_L  = 0.5,
+      //  DL shape and fixed global rate for B.  vapor() in R always supplies
+      //  these; the paper's shape is 1/(p * Kx), which depends on the data and
+      //  so cannot be a literal default here.
       const double a_B  = 0.5,
       const double b_B  = 0.5,
       //  DP base measure Gamma(as, rate = bs).  Default moved from 0.1 to 1:
@@ -496,7 +501,6 @@ Rcpp::List var_precision_sampler(
    const unsigned p = Y.n_cols;
    const unsigned Teff = T - lags;
    const unsigned Kx   = lags * p;
-   const double a_B_eff = 1.0 / (double)(p * Kx);
    
    arma::mat Ymat(Teff, p), X(Teff, Kx);
    for (unsigned t = 0; t < Teff; ++t) {
@@ -508,7 +512,8 @@ Rcpp::List var_precision_sampler(
    arma::mat B(p, Kx, fill::zeros);
    arma::mat T_phi_B(p, Kx, fill::value(1.0/Kx));
    arma::mat Plam_B(p, Kx, fill::value(1.0/Kx));
-   arma::vec tau_B(p, fill::value(0.5));
+   //  fixed global scale, from b_B (0.5 reproduces the hardcoded value)
+   arma::vec tau_B(p, fill::value(b_B));
    
    arma::mat phimat(p, k, fill::randn);
    if (Lambda_init.isNotNull()) {
@@ -568,7 +573,7 @@ Rcpp::List var_precision_sampler(
       
       bool huge = (Kx > (int)Teff);
       sample_B(B, Ymat, X, Plam_B, ps, huge);
-      update_B_params(B, T_phi_B, Plam_B, tau_B, a_B_eff, b_B);
+      update_B_params(B, T_phi_B, Plam_B, tau_B, a_B);
       
       arma::mat E = Ymat - X * B.t();
       
@@ -751,8 +756,10 @@ Rcpp::List var_precision_sampler_rr(
       const std::string prior_B = "ridge",   // "ridge" or "dl"
       const double s_U2    = 1.0,            // ridge prior variance for U
       const double s_V2    = 1.0,            // ridge prior variance for V (if prior_B=="ridge")
+      //  DL shape and fixed global rate for V.  vapor() in R always supplies
+      //  these; the paper's shape is 1/(Kx * r), which depends on the data.
       const double a_V     = 0.5,            // DL shape for V (if prior_B=="dl")
-      const double b_V     = 0.5,            // DL rate  for V (if prior_B=="dl")
+      const double b_V     = 0.5,            // fixed global rate for V
       //  DP base measure Gamma(as, rate = bs); default 1, as in the full-rank
       //  sampler above.
       const double as      = 1.0,
@@ -799,10 +806,10 @@ Rcpp::List var_precision_sampler_rr(
    }
    
    // -- DL state for V, only used if prior_B == "dl" --------------------------
-   const double a_V_eff = 1.0 / (double)(Kx * r);   // analogous to a_B_eff
    arma::mat T_phi_V(Kx, r, fill::value(1.0/r));
    arma::mat Plam_V(Kx, r, fill::value(1.0/r));
-   arma::vec tau_V(Kx, fill::value(0.5));
+   //  fixed global scale, from b_V (0.5 reproduces the hardcoded value)
+   arma::vec tau_V(Kx, fill::value(b_V));
    
    
    // constant ridge prior-variance matrix, reused every iteration if ridge
@@ -872,7 +879,7 @@ Rcpp::List var_precision_sampler_rr(
       
       const arma::mat &PriorVarV = use_dl ? Plam_V : ridge_mat_V;
       sample_V(V, U, Ymat, X, XtX, ps, PriorVarV);
-      if (use_dl)  update_B_params(V, T_phi_V, Plam_V, tau_V, a_V_eff, b_V);
+      if (use_dl)  update_B_params(V, T_phi_V, Plam_V, tau_V, a_V);
       
       Z = X * V;
       arma::mat B = U * V.t();

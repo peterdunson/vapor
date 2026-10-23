@@ -1,0 +1,130 @@
+VAPOR library: /Users/peterdunson/Desktop/vapor/.Rlib_p29/VAPOR
+panel: train 100 x 100, test 20 rows | seeds 101, 102, 103, 104
+settings: k 25 rank 3 a_L 0.5 | nrun 100000 burn 20000 thin 80 | jitter 5e-03
+base measure: as = 1, bs = 1 (main fit: as = bs = 0.1)
+fitting 4 chain(s) on 4 worker(s)
+4 of 4 chains completed in 10.8 min
+
+=== 1. MSPE per chain and mean (SD) ===
+                 fit n_chains                      per_chain            MSPE
+ main, as = bs = 0.1        4 0.5659, 0.5640, 0.5650, 0.5657 0.5652 (0.0008)
+  pilot, as = bs = 1        4 0.5649, 0.5610, 0.5595, 0.5676 0.5632 (0.0037)
+
+  Diebold-Mariano against the main fit's VAR + Glasso (positive favours VAPOR):
+                 fit Difference    SE   DM     p     Won
+ main, as = bs = 0.1      0.019 0.012 1.53 0.143 12 / 20
+  pilot, as = bs = 1      0.021 0.012 1.73 0.101 12 / 20
+
+=== 2. selected edges: main 35, pilot 26 ===
+
+  pilot, as = bs = 1
+                edge    mean      lo      hi  Rhat bulk_ESS
+      PCECC96--PCDGx  0.4922  0.0528  0.7513 1.009      644
+     PCECC96--PCESVx  0.5502  0.0900  0.7846 1.020      221
+       PCDGx--PCESVx -0.3883 -0.6682 -0.0144 1.060       44
+    IPFINAL--IPCONGD  0.6910  0.4314  0.8449 1.013      813
+       INDPRO--IPMAT  0.6988  0.3305  0.8662 1.002     2738
+    IPFINAL--IPBUSEQ  0.6047  0.2850  0.7923 1.005     1813
+    IPCONGD--IPBUSEQ -0.5731 -0.7587 -0.2858 1.003     2641
+         TCU--CUMFNS  0.7500  0.4226  0.8785 1.003     2105
+     MANEMP--DMANEMP  0.6319  0.3363  0.8240 1.000     2480
+      USGOOD--USCONS  0.6298  0.2296  0.8232 1.004     1276
+       USPRIV--USLAH  0.5206  0.0016  0.8440 1.011      469
+   UNRATE--UNRATESTx  0.7507  0.4667  0.8887 1.001     2820
+ UNRATELTx--UEMP27OV  0.6164  0.2722  0.8131 1.003     1649
+       HOUST--HOUSTS  0.5125  0.0766  0.7526 1.002     1165
+       HOUST--HOUSTW  0.5045  0.0806  0.7419 1.003     1306
+    AMDMNOx--ANDENOx  0.8066  0.5818  0.8866 1.005      982
+     PPIACO--WPSID61  0.4860  0.0531  0.7509 1.001     2105
+   PCECTPI--CPITRNSL  0.4189  0.0324  0.6984 1.003     1211
+  CPIAUCSL--CPITRNSL  0.5582  0.2258  0.7966 1.003     1233
+     FEDFUNDS--TB3MS  0.6387  0.3104  0.8224 1.004      850
+          TB3MS--GS1  0.4673  0.1726  0.7348 1.008      356
+            GS1--GS5  0.3044  0.0158  0.6030 1.020      238
+           GS5--GS10  0.4217  0.0417  0.7450 1.023      129
+            AAA--BAA  0.6675  0.4127  0.8319 1.002     2075
+   GS5--MORTGAGE30US  0.3547  0.0203  0.6333 1.002     1071
+      M1REAL--M2REAL  0.6482  0.1235  0.8851 1.022      194
+
+  gained 2, lost 11, shared 24
+              edge              status main_mean pilot_mean
+     USPRIV--USLAH gained in the pilot    0.4046     0.5206
+          GS1--GS5 gained in the pilot    0.2614     0.3044
+     PCESVx--PCNDx   lost in the pilot   -0.3048    -0.2581
+     GDPC1--GPDIC1   lost in the pilot    0.7594     0.4908
+      GDPC1--GCEC1   lost in the pilot    0.3815     0.2535
+    GDPC1--EXPGSC1   lost in the pilot    0.5078     0.3054
+   GPDIC1--EXPGSC1   lost in the pilot   -0.4591    -0.2659
+    GDPC1--IMPGSC1   lost in the pilot   -0.5656    -0.3340
+   GPDIC1--IMPGSC1   lost in the pilot    0.5228     0.3052
+  EXPGSC1--IMPGSC1   lost in the pilot    0.3873     0.2357
+ IPDMAT--IPMANSICS   lost in the pilot    0.5533     0.4619
+ IPNMAT--IPMANSICS   lost in the pilot    0.4468     0.3807
+   USGOOD--DMANEMP   lost in the pilot    0.3793     0.3683
+
+=== 3. cross-group selected edges, and purity of the top 100 pairs ===
+                 fit selected cross_group within_group top100_same_group top100_purity
+ main, as = bs = 0.1       35           0           35                96          0.96
+  pilot, as = bs = 1       26           0           26                93          0.93
+
+=== 4. the rate block ===
+              pair main_mean main_lo main_hi main_selected pilot_mean pilot_lo pilot_hi pilot_selected
+   FEDFUNDS--TB3MS    0.6361  0.3049  0.8363          TRUE     0.6387   0.3104   0.8224           TRUE
+     FEDFUNDS--GS1    0.1396 -0.2928  0.5437         FALSE     0.1151  -0.3353   0.5149          FALSE
+     FEDFUNDS--GS5   -0.0778 -0.3713  0.1478         FALSE    -0.1007  -0.4164   0.1297          FALSE
+    FEDFUNDS--GS10   -0.0256 -0.2304  0.1426         FALSE    -0.0295  -0.2312   0.1357          FALSE
+        TB3MS--GS1    0.4085  0.0955  0.7067          TRUE     0.4673   0.1726   0.7348           TRUE
+        TB3MS--GS5    0.0257 -0.1728  0.2547         FALSE     0.0127  -0.2044   0.2419          FALSE
+       TB3MS--GS10    0.0057 -0.1377  0.1534         FALSE    -0.0048  -0.1651   0.1614          FALSE
+          GS1--GS5    0.2614 -0.0042  0.5775         FALSE     0.3044   0.0158   0.6030           TRUE
+         GS1--GS10    0.0160 -0.1430  0.2284         FALSE     0.0227  -0.1680   0.2438          FALSE
+         GS5--GS10    0.3925  0.0179  0.7402          TRUE     0.4217   0.0417   0.7450           TRUE
+ GS5--MORTGAGE30US    0.3540  0.0050  0.6316          TRUE     0.3547   0.0203   0.6333           TRUE
+
+=== 5. the 5 negative edges of the main fit ===
+             edge main_mean main_lo main_hi main_selected pilot_mean pilot_lo pilot_hi pilot_selected
+    PCDGx--PCESVx   -0.4490 -0.6812 -0.1383          TRUE    -0.3883  -0.6682  -0.0144           TRUE
+    PCESVx--PCNDx   -0.3048 -0.5539 -0.0167          TRUE    -0.2581  -0.5441   0.0297          FALSE
+  GPDIC1--EXPGSC1   -0.4591 -0.6866 -0.0235          TRUE    -0.2659  -0.6606   0.1028          FALSE
+   GDPC1--IMPGSC1   -0.5656 -0.7762 -0.0620          TRUE    -0.3340  -0.7551   0.0939          FALSE
+ IPCONGD--IPBUSEQ   -0.5644 -0.7465 -0.3007          TRUE    -0.5731  -0.7587  -0.2858           TRUE
+
+=== 6. convergence over all 4,950 partial correlations, and rho(B) ===
+                 fit pairs max_Rhat median_Rhat n_Rhat_gt_1.05 n_Rhat_gt_1.1 min_bulk_ESS median_bulk_ESS loglik_Rhat
+ main, as = bs = 0.1  4950    1.231       1.001             17             8           13            3798       1.056
+  pilot, as = bs = 1  4950    1.233       1.001             38            26           13            3821       1.011
+
+  spectral radius of B:
+                 fit    chain draws median_rho pr_gt_1
+ main, as = bs = 0.1 seed 101   400      0.814  0.1950
+ main, as = bs = 0.1 seed 102   400      0.805  0.1850
+ main, as = bs = 0.1 seed 103   400      0.831  0.2025
+ main, as = bs = 0.1 seed 104   400      0.980  0.4850
+ main, as = bs = 0.1   pooled  1600      0.846  0.2669
+  pilot, as = bs = 1 seed 101   400      0.779  0.1325
+  pilot, as = bs = 1 seed 102   400      0.792  0.1500
+  pilot, as = bs = 1 seed 103   400      0.793  0.1125
+  pilot, as = bs = 1 seed 104   400      0.983  0.4825
+  pilot, as = bs = 1   pooled  1600      0.815  0.2194
+
+=== 7. residual_prec per chain, and iterations with any series floored ===
+                 fit seed       min    median at_floor lt_1e_6 lt_1e_4 iterations_with_any_floor series_floored
+ main, as = bs = 0.1  101 1.000e-08 1.371e+00       12     891    3004                        NA             11
+ main, as = bs = 0.1  102 1.000e-08 1.310e+00       17     798    2263                        NA             11
+ main, as = bs = 0.1  103 1.000e-08 1.343e+00       18     763    3260                        NA             11
+ main, as = bs = 0.1  104 1.000e-08 1.360e+00        8     526    1404                        NA              9
+  pilot, as = bs = 1  101 1.164e-04 1.488e+00        0       0       0                         0              0
+  pilot, as = bs = 1  102 2.029e-04 1.474e+00        0       0       0                         0              0
+  pilot, as = bs = 1  103 6.679e-05 1.435e+00        0       0       1                         0              0
+  pilot, as = bs = 1  104 1.538e-04 1.428e+00        0       0       0                         0              0
+
+=== 8. minutes per chain ===
+                 fit seed minutes
+ main, as = bs = 0.1  101   14.32
+ main, as = bs = 0.1  102   14.30
+ main, as = bs = 0.1  103   14.31
+ main, as = bs = 0.1  104   14.29
+  pilot, as = bs = 1  101   10.81
+  pilot, as = bs = 1  102   10.80
+  pilot, as = bs = 1  103   10.82
+  pilot, as = bs = 1  104   10.82

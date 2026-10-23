@@ -1,0 +1,80 @@
+VAPOR library: /Users/peterdunson/Desktop/vapor/.Rlib_p29/VAPOR
+panel: train 100 x 29, test 20 rows | seeds 101, 102, 103, 104
+settings: k 10 rank 3 a_L 0.5 | nrun 100000 burn 20000 thin 80 | jitter 5e-03
+base measure: as = 1, bs = 1 (main fit: as = bs = 0.1)
+fitting 4 chain(s) on 4 worker(s)
+4 of 4 chains completed in 1.0 min
+
+=== 1. MSPE per chain and mean (SD) ===
+                 fit n_chains                      per_chain            MSPE
+ main, as = bs = 0.1        4 0.5643, 0.5924, 0.5848, 0.5572 0.5747 (0.0166)
+  pilot, as = bs = 1        4 0.5631, 0.5790, 0.5746, 0.5750 0.5729 (0.0069)
+
+=== 2. selected edges, pooled 95% CI rule ===
+
+  main, as = bs = 0.1: 7 edges
+                 edge    mean      lo      hi  Rhat bulk_ESS
+            GS10--BAA  0.5700  0.3197  0.7510 1.012      287
+      FEDFUNDS--TB3MS  0.5516  0.2674  0.8019 1.018      171
+           GS1--TB3MS  0.4739  0.1868  0.7312 1.020      112
+        GDPC1--GPDIC1  0.6459  0.0188  0.8223 1.018      194
+      PCECC96--GPDIC1 -0.5194 -0.7604 -0.0066 1.019      165
+       PAYEMS--UNRATE -0.7108 -0.8876 -0.0749 1.108       25
+ CPIAUCSL--WPSFD49207  0.5582  0.2838  0.8011 1.211       14
+
+  pilot, as = bs = 1: 13 edges
+                 edge    mean      lo      hi  Rhat bulk_ESS
+     IPFINAL--IPCONGD  0.5323  0.0052  0.8232 1.006     1436
+     IPCONGD--IPBUSEQ -0.4116 -0.7054 -0.0148 1.005     1821
+       GDPC1--PCECC96  0.5849  0.1199  0.7815 1.005      881
+            GS1--GS10  0.3004  0.0365  0.5252 1.000     2601
+            GS10--BAA  0.6530  0.4733  0.7812 1.000     2897
+      FEDFUNDS--TB3MS  0.6267  0.3686  0.7995 1.002     1416
+           GS1--TB3MS  0.5336  0.2733  0.7383 1.003     1030
+        GS10--S.P.500  0.4090  0.0525  0.6393 1.002     2523
+         BAA--S.P.500 -0.3783 -0.6076 -0.0548 1.001     2377
+        GDPC1--GPDIC1  0.6490  0.2139  0.8098 1.003     1089
+      PCECC96--GPDIC1 -0.5508 -0.7615 -0.1362 1.005     1039
+       PAYEMS--UNRATE -0.7863 -0.8842 -0.5010 1.004      858
+ CPIAUCSL--WPSFD49207  0.7212  0.4645  0.8557 1.031      132
+
+  overlap:
+                 edge in_main in_pilot
+ CPIAUCSL--WPSFD49207    TRUE     TRUE
+      FEDFUNDS--TB3MS    TRUE     TRUE
+        GDPC1--GPDIC1    TRUE     TRUE
+           GS1--TB3MS    TRUE     TRUE
+            GS10--BAA    TRUE     TRUE
+       PAYEMS--UNRATE    TRUE     TRUE
+      PCECC96--GPDIC1    TRUE     TRUE
+         BAA--S.P.500   FALSE     TRUE
+       GDPC1--PCECC96   FALSE     TRUE
+            GS1--GS10   FALSE     TRUE
+        GS10--S.P.500   FALSE     TRUE
+     IPCONGD--IPBUSEQ   FALSE     TRUE
+     IPFINAL--IPCONGD   FALSE     TRUE
+
+=== 3. R-hat and ESS over all 406 partial correlations ===
+                 fit pairs max_Rhat median_Rhat n_Rhat_gt_1.05 n_Rhat_gt_1.1 min_bulk_ESS median_bulk_ESS loglik_Rhat loglik_bulk_ESS
+ main, as = bs = 0.1   406    1.235       1.004             21            10           13            2489       1.011             195
+  pilot, as = bs = 1   406    1.031       1.001              0             0          132            3684       1.008            1061
+
+=== 4. residual_prec per chain, and iterations with any series floored ===
+                 fit seed       min    median at_floor lt_1e_6 lt_1e_4 iterations_with_any_floor series_floored
+ main, as = bs = 0.1  101 1.000e-08 1.246e+00       22    1167    3325                      1128              9
+ main, as = bs = 0.1  102 1.000e-08 1.202e+00        7     832    2285                       647             10
+ main, as = bs = 0.1  103 1.000e-08 1.207e+00       24    1157    2464                      1398             10
+ main, as = bs = 0.1  104 1.000e-08 1.248e+00        6     484    1660                       639              9
+  pilot, as = bs = 1  101 9.111e-05 1.208e+00        0       0       1                         0              0
+  pilot, as = bs = 1  102 9.310e-06 1.201e+00        0       0       7                         0              0
+  pilot, as = bs = 1  103 8.009e-05 1.205e+00        0       0       1                         0              0
+  pilot, as = bs = 1  104 1.989e-04 1.199e+00        0       0       0                         0              0
+null device 
+          1 
+
+=== 5. wrote /Users/peterdunson/Desktop/vapor/applications/results/checks/pilot_base11/trace_two_edges.png ===
+
+  the two edges, side by side:
+                 edge main_mean main_Rhat main_ESS pilot_mean pilot_Rhat pilot_ESS
+ CPIAUCSL--WPSFD49207    0.5582     1.211       14     0.7212      1.031       132
+       PAYEMS--UNRATE   -0.7108     1.108       25    -0.7863      1.004       858

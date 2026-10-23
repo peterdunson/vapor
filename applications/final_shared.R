@@ -485,10 +485,14 @@ pcor_mean_prec <- function(chains, p){
       if (!is.null(z$pcor_mean_draws)){
          nd <- if (!is.null(z$n_draws)) z$n_draws else 1L
          acc <- acc + z$pcor_mean_draws * nd; n <- n + nd; nch <- nch + 1L; next }
+      #  the p = 29 chains carry their precision draws inline.  A third shape,
+      #  a `prec_draws_file` basename read from results/fits/kastner_p100_prec_draws/,
+      #  was removed: that directory has never existed in this repository, and
+      #  every chain that names one also carries pcor_mean_draws inline, so the
+      #  branch above always won.  Verified: the Kastner p = 100 edge counts,
+      #  all 26 per-edge ranks and the recovery summary in results_summary.md
+      #  are reproduced exactly without it.
       A <- z$prec_draws
-      if (is.null(A) && !is.null(z$prec_draws_file)){
-         f <- file.path(FITS_DIR, "kastner_p100_prec_draws", z$prec_draws_file)
-         if (file.exists(f)) A <- readRDS(f) }
       if (is.null(A)) next
       nd <- dim(A)[3]
       for (s in seq_len(nd)) acc <- acc + pcor_from_omega(A[,,s])

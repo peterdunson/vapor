@@ -73,9 +73,15 @@ vapor_warm_start <- function(Y, lags = 1, k = 5, rank = "full",
 #'   B = U V^T, with `prior_B` controlling the prior on V.
 #' @param nrun,burn,thin MCMC controls.
 #' @param a_L,b_L Dirichlet-Laplace shape/rate for the precision loadings.
-#' @param a_B,b_B Dirichlet-Laplace shape/rate for the VAR coefficients
-#'   (full B when rank = "full", or V when rank is numeric and
-#'   prior_B = "dl").
+#' @param a_B,b_B Dirichlet-Laplace shape and fixed global rate for the
+#'   full-rank VAR coefficient matrix B. Used only when rank = "full". The
+#'   default `a_B = 1 / (ncol(Y) * ncol(Y) * lags)` is the reciprocal of the
+#'   number of VAR coefficients, p * K_x with K_x = p * lags, as in the paper.
+#' @param a_V,b_V Dirichlet-Laplace shape and fixed global rate for the
+#'   reduced-rank factor V. Used only when rank is numeric and
+#'   prior_B = "dl". The default `a_V = 1 / (ncol(Y) * lags * rank)` is the
+#'   reciprocal of the number of entries of V, K_x * r. Its default mentions
+#'   `rank`, so it is evaluated only when `rank` is an integer.
 #' @param prior_B Prior on the reduced-rank factor V. Ignored when
 #'   rank = "full" (always Dirichlet-Laplace on the full B). `"dl"`
 #'   (default) uses Dirichlet-Laplace shrinkage on V; `"ridge"` uses a
@@ -101,7 +107,8 @@ vapor_warm_start <- function(Y, lags = 1, k = 5, rank = "full",
 vapor <- function(Y, lags = 1, k = 5, rank = "full",
                   nrun = 5000, burn = floor(nrun / 2), thin = 5,
                   a_L = 0.5, b_L = 0.5,
-                  a_B = 0.5, b_B = 0.5,
+                  a_B = 1 / (ncol(Y) * ncol(Y) * lags), b_B = 0.5,
+                  a_V = 1 / (ncol(Y) * lags * rank),    b_V = 0.5,
                   prior_B = c("dl", "ridge"),
                   s_U2 = 1.0, s_V2 = 1.0,
                   as = 1.0, bs = 1.0, a_dir = 0.1, b_dir = 0.1,
@@ -118,6 +125,17 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    prior_B  <- match.arg(prior_B)
    dp_prior <- match.arg(dp_prior)
    init     <- match.arg(init)
+
+   #  every DL hyperparameter must be one positive finite number.  a_V is
+   #  checked in the reduced-rank branch instead: its default refers to `rank`
+   #  and forcing it here would error whenever rank = "full".
+   chk_pos <- function(x, nm){
+      if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0)
+         stop(sprintf("`%s` must be a single positive finite number.", nm))
+      invisible(TRUE) }
+   for (nm in c("a_L", "b_L", "b_B", "b_V", "s_U2", "s_V2",
+                "as", "bs", "a_dir", "b_dir"))
+      chk_pos(get(nm), nm)
    
    p <- ncol(Y); T_obs <- nrow(Y)
    if (!is.null(seed)) set.seed(seed)
@@ -131,6 +149,7 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
    
    if (identical(rank, "full")) {
       
+      chk_pos(a_B, "a_B")
       res <- var_precision_sampler(
          Y = Y, lags = as.integer(lags), k = as.integer(k),
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
@@ -148,12 +167,13 @@ vapor <- function(Y, lags = 1, k = 5, rank = "full",
       max_rank <- min(p, lags * p)
       if (rank > max_rank)
          stop(sprintf("`rank` must be <= min(p, lags*p) = %d.", max_rank))
+      chk_pos(a_V, "a_V")
       
       res <- var_precision_sampler_rr(
          Y = Y, lags = as.integer(lags), k = as.integer(k), rank = as.integer(rank),
          nrun = as.integer(nrun), burn = as.integer(burn), thin = as.integer(thin),
          a_L = a_L, b_L = b_L, prior_B = prior_B,
-         s_U2 = s_U2, s_V2 = s_V2, a_V = a_B, b_V = b_B,
+         s_U2 = s_U2, s_V2 = s_V2, a_V = a_V, b_V = b_V,
          as = as, bs = bs, a_dir = a_dir, b_dir = b_dir,
          dp_prior = dp_prior, sg_a = sg_a, sg_b = sg_b, sg_m = sg_m,
          Lambda_init = ws$Lambda, delta_init = ws$delta, V_init = ws$V

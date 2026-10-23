@@ -30,16 +30,45 @@ Two objects are estimated **jointly**, in one Gibbs sampler:
 | `B` | VAR coefficient matrix | temporal **dynamics** ($\mathbf{y}_t$ from $\mathbf{y}_{t-1}$) |
 | `Omega` | innovation **precision** | contemporaneous **conditional dependence** of the shocks |
 
-`Omega` is low-rank plus diagonal ($\Lambda\Lambda^\top + \Delta$), so it stays
-estimable in high dimensions and its off-diagonals form a Gaussian graphical
-model. Fitting `B` and `Omega` together (rather than a VAR first, then a
-precision on its residuals) lets uncertainty flow between them, which matters
-most when the VAR is hard to estimate.
+`Omega` is low rank plus diagonal ($\Lambda\Lambda^\top + \Delta$), which keeps
+it estimable in high dimensions. This form does **not** put exact zeros in
+`Omega`: the matrix is dense, and what the low-rank structure does is
+concentrate the off-diagonal mass into a few directions, shrinking most partial
+correlations toward zero. A conditional independence graph is therefore not read
+off `Omega` directly but obtained by a separate posterior selection step, which
+[Selecting a graph](#selecting-a-graph) covers.
+
+Fitting `B` and `Omega` together, rather than a VAR first and then a precision
+estimator on its residuals, lets uncertainty flow between them. That matters
+most when the VAR is hard to estimate: strong autocorrelation, short samples, or
+high dimension.
+
+**Priors and defaults.** The loadings $\Lambda$ take a Dirichlet-Laplace prior
+(`a_L = b_L = 0.5`) and the VAR coefficients take a Dirichlet-Laplace prior
+whose shape is the reciprocal of the number of coefficients being shrunk
+(`a_B = 1 / (p^2 * lags)` for full-rank `B`, `a_V = 1 / (p * lags * r)` for the
+reduced-rank factor `V`). The idiosyncratic precisions $\delta_j^2$ take a
+Dirichlet process prior whose base measure is **Gamma(1, 1)** (`as = bs = 1`),
+which has mean one on the scale of standardized data, and whose concentration
+has a **Gamma(0.1, 0.1)** prior (`a_dir = b_dir = 0.1`) updated by the
+Escobar-West scheme.
+
+**Numerical safeguard.** After each draw every idiosyncratic precision is set to
+$\max(\delta_j^2, 10^{-8})$. This is a safeguard for the Cholesky factorization
+in the update of $\Lambda$, not part of the model. The fit reports how often it
+was reached, and in the paper's application fits it never is.
 
 ````{r setup}
 library(VAPOR)
 library(MASS)
 set.seed(1)
+````
+
+To install from source:
+
+````{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("peterdunson/vapor")
 ````
 
 ## Simulate from the model
@@ -53,14 +82,14 @@ We generate data exactly as in Simulation A of the paper:
 
 ````{r dgp}
 simulate_sim_a <- function(T, p = 20, k = 5, rho = 0.95) {
-   # sparse loadings -> precision Omega = Lambda Lambda' + I
+   # loadings with 20% nonzero entries -> precision Omega = Lambda Lambda' + I
    Lambda <- matrix(0, p, k)
    nz <- runif(p * k) < 0.20
    Lambda[nz] <- 1.5 * sample(c(-1, 1), sum(nz), replace = TRUE)
    Omega <- tcrossprod(Lambda) + diag(p)
    Sigma <- chol2inv(chol(Omega))
 
-   # sparse B scaled to spectral radius rho
+   # B with 10% nonzero entries, scaled to spectral radius rho
    B <- matrix(0, p, p)
    nzB <- runif(p * p) < 0.10
    B[nzB] <- rnorm(sum(nzB))
@@ -87,6 +116,7 @@ sampler; `k = 5` matches the number of true factors.
 fit <- vapor(sim$Y, lags = 1, k = 5, rank = "full",
              nrun = 3000, burn = 1500, thin = 5, seed = 1)
 fit
+fit$floor_iters   # iterations in which the 1e-8 bound was reached
 ````
 
 What comes back:
@@ -96,7 +126,26 @@ What comes back:
 | `fit$Omega` | posterior-mean precision (`p x p`) |
 | `fit$B` | VAR coefficient draws (`p x p x n_draws`) |
 | `fit$Lambda` | factor-loading draws |
+| `fit$residual_prec` | idiosyncratic precision draws (`n_draws x p`) |
+| `fit$floor_hits`, `fit$floor_first`, `fit$floor_iters` | how often the 1e-8 bound was reached |
 | `fit$dims`, `fit$settings` | dimensions and sampler settings |
+
+## Reduced-rank dynamics
+
+When $p$ approaches or exceeds $T$, the full $B$ is over-parameterized. Setting
+`rank` to a small integer replaces it with $B = UV^\top$. The paper uses
+$r = 3$ in both applications and in Simulations E and F:
+
+````{r rr}
+fit_rr <- vapor(sim$Y, lags = 1, k = 5, rank = 3, prior_B = "dl",
+                nrun = 3000, burn = 1500, thin = 5, seed = 1)
+fit_rr$settings$rank
+````
+
+`U` always has a ridge prior. `prior_B` sets the prior on `V`: `"dl"` (the
+default) for Dirichlet-Laplace shrinkage, or `"ridge"` for a constant-variance
+Gaussian prior with variance `s_V2`. `prior_B` is ignored when
+`rank = "full"`.
 
 ## Did it recover Omega?
 
@@ -136,7 +185,7 @@ B_hat <- apply(fit$B, c(1, 2), mean)
 head(as.numeric(B_hat %*% sim$Y[nrow(sim$Y), ]))
 ````
 
-**Precision (`Omega`) — nowcasting.** Reconstruct held-out series from the
+**Precision (`Omega`), nowcasting.** Reconstruct held-out series from the
 observed ones in the same period, via the Gaussian conditional mean
 $\hat{\mathbf{y}}_{\text{hid}} = -\Omega_{hh}^{-1}\Omega_{ho}\,\mathbf{y}_{\text{obs}}$.
 This uses only `Omega`.
@@ -154,21 +203,64 @@ pred <- nowcast(fit$Omega, y[obs], obs, hid)
 cat(sprintf("Nowcast MSPE: %.3f\n", mean((y[hid] - pred)^2)))
 ````
 
-**A sparse graph.** `select_graph()` thresholds `Omega` into edges with
-posterior false-discovery-rate control.
+## Selecting a graph {#selecting-a-graph}
 
-````{r graph, eval = FALSE}
+`Omega` is dense, so a conditional independence graph is selected from the
+posterior. The paper uses two rules.
+
+**Credible interval (the application).** An edge is reported when the central
+95% posterior credible interval of its partial correlation excludes zero. The
+package has no function for this rule; it takes a few lines on a fit's draws:
+
+````{r ci}
+# per-draw partial correlations
+pc_draws <- function(fit) {
+   d <- dim(fit$Lambda); p <- d[1]; n <- d[3]
+   out <- array(0, dim = c(p, p, n))
+   for (s in seq_len(n)) {
+      om <- tcrossprod(fit$Lambda[, , s])
+      diag(om) <- diag(om) + fit$residual_prec[s, ]
+      sd <- sqrt(diag(om))
+      out[, , s] <- -om / outer(sd, sd)
+   }
+   out
+}
+
+PC <- pc_draws(fit)
+lo <- apply(PC, c(1, 2), quantile, 0.025)
+hi <- apply(PC, c(1, 2), quantile, 0.975)
+P  <- (lo > 0 | hi < 0) * 1
+diag(P) <- 0
+
+sum(P) / 2   # number of edges
+````
+
+In the paper the draws of four chains are pooled before the quantiles are taken,
+and the reported partial correlations are the posterior means of the per-draw
+partial correlations over the same pooled draws.
+
+**pFDR (the simulations).** `select_graph()` implements the posterior
+false-discovery-rate procedure, declaring an edge where the posterior
+probability that a partial correlation exceeds a magnitude threshold is above
+`beta`, subject to a pFDR below `alpha`. The simulations use `alpha = 0.1` and
+`beta = 0.85`:
+
+````{r graph}
 sel <- select_graph(fit, alpha = 0.1, beta = 0.85)
 sum(sel$P) / 2   # number of edges
-sel$pFDR         # realized FDR
+sel$pFDR         # realized pFDR
 ````
+
+The two rules ask different questions: the credible-interval rule asks whether a
+partial correlation is distinguishable from zero, the pFDR rule asks whether its
+magnitude exceeds a threshold.
 
 ## Choosing settings
 
 | Setting | Guidance |
 |---|---|
-| `rank` | `"full"` when $T > p$; a small integer (2–3) when $T \approx p$ or $T < p$ |
+| `rank` | `"full"` when $T > p$; a small integer, 2 or 3, when $T \approx p$ or $T < p$. The paper uses 3 |
 | `k` | number of precision factors; pick by held-out prediction, plateaus once large enough |
-| `prior_B` | `"dl"` (default) shrinks the coefficients; `"ridge"` and `"mgps"` are alternatives for the reduced-rank case |
-````
-````
+| `prior_B` | `"dl"` (the default) shrinks the entries of `V`; `"ridge"` is the alternative. Ignored when `rank = "full"` |
+| `as`, `bs` | DP base measure, both 1 by default |
+| `a_dir`, `b_dir` | prior on the DP concentration, both 0.1 by default |

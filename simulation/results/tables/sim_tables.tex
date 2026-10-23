@@ -1,0 +1,461 @@
+%  Simulation tables, regenerated under the Gamma(1, 1) DP base measure.
+%  2026-10-22 09:37
+%  tab:sim-f: p = 200, T = 140 was cancelled; three blocks are reported.
+
+% ---- tab:sim-a-autocorr ----
+\begin{table}[h!]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Simulation A, Experiment A: varying spectral radius, $p=20$, $T=200$, 25 replicates. $\Delta_F$ is the mean paired per-replicate difference in Frobenius distance against VAPOR, with positive values favoring VAPOR. The lowest Frobenius distance in each block is shown in bold.}
+\label{tab:sim-a-autocorr}
+\begin{tabular}{llcccc}
+\toprule
+Scenario & Method & Sensitivity & Specificity & Frobenius & $\Delta_F$ (SE) \\
+\midrule
+$\rho = 0.10$ & PrecFact (no VAR)  & 0.555 (0.188) & 0.998 (0.004) & 0.775 (0.093) & 0.091 (0.010) \\
+              & Glasso (no VAR)    & 0.825 (0.149) & 0.510 (0.138) & 0.943 (0.129) & 0.259 (0.021) \\
+              & VAR + Glasso       & 0.833 (0.151) & 0.512 (0.140) & 0.929 (0.113) & 0.246 (0.019) \\
+              & VAR + PrecFact     & 0.555 (0.187) & 0.998 (0.004) & 0.751 (0.077) & 0.067 (0.010) \\
+              & Kastner (VAR+FSV)  & 0.547 (0.118) & 0.934 (0.021) & 1.118 (0.397) & 0.435 (0.076) \\
+              & VAPOR              & 0.567 (0.154) & 0.999 (0.002) & \textbf{0.684 (0.074)} & --- \\
+\midrule
+$\rho = 0.50$ & PrecFact (no VAR)  & 0.398 (0.213) & 0.970 (0.024) & 1.524 (0.482) & 0.830 (0.089) \\
+              & Glasso (no VAR)    & 0.675 (0.308) & 0.590 (0.216) & 1.569 (0.380) & 0.874 (0.069) \\
+              & VAR + Glasso       & 0.834 (0.143) & 0.527 (0.140) & 0.932 (0.113) & 0.237 (0.018) \\
+              & VAR + PrecFact     & 0.557 (0.184) & 0.999 (0.003) & 0.755 (0.076) & 0.060 (0.012) \\
+              & Kastner (VAR+FSV)  & 0.536 (0.120) & 0.933 (0.022) & 1.199 (0.379) & 0.504 (0.072) \\
+              & VAPOR              & 0.566 (0.157) & 1.000 (0.001) & \textbf{0.695 (0.069)} & --- \\
+\midrule
+$\rho = 0.75$ & PrecFact (no VAR)  & 0.304 (0.147) & 0.926 (0.036) & 2.363 (0.562) & 1.671 (0.107) \\
+              & Glasso (no VAR)    & 0.407 (0.363) & 0.757 (0.242) & 2.031 (0.411) & 1.338 (0.076) \\
+              & VAR + Glasso       & 0.837 (0.145) & 0.529 (0.140) & 0.935 (0.115) & 0.242 (0.017) \\
+              & VAR + PrecFact     & 0.561 (0.191) & 0.998 (0.004) & 0.761 (0.082) & 0.068 (0.012) \\
+              & Kastner (VAR+FSV)  & 0.536 (0.117) & 0.933 (0.020) & 1.196 (0.406) & 0.504 (0.077) \\
+              & VAPOR              & 0.553 (0.157) & 1.000 (0.002) & \textbf{0.693 (0.067)} & --- \\
+\midrule
+$\rho = 0.89$ & PrecFact (no VAR)  & 0.236 (0.098) & 0.888 (0.050) & 2.977 (0.604) & 2.284 (0.117) \\
+              & Glasso (no VAR)    & 0.146 (0.294) & 0.903 (0.225) & 2.177 (0.458) & 1.483 (0.088) \\
+              & VAR + Glasso       & 0.838 (0.148) & 0.527 (0.146) & 0.935 (0.113) & 0.241 (0.018) \\
+              & VAR + PrecFact     & 0.575 (0.171) & 0.998 (0.004) & 0.758 (0.077) & 0.064 (0.012) \\
+              & Kastner (VAR+FSV)  & 0.529 (0.116) & 0.932 (0.021) & 1.142 (0.396) & 0.449 (0.075) \\
+              & VAPOR              & 0.559 (0.160) & 1.000 (0.002) & \textbf{0.694 (0.067)} & --- \\
+\midrule
+$\rho = 0.95$ & PrecFact (no VAR)  & 0.238 (0.111) & 0.864 (0.061) & 3.269 (0.656) & 2.580 (0.126) \\
+              & Glasso (no VAR)    & 0.053 (0.192) & 0.967 (0.139) & 2.193 (0.468) & 1.505 (0.091) \\
+              & VAR + Glasso       & 0.839 (0.144) & 0.525 (0.146) & 0.934 (0.114) & 0.246 (0.019) \\
+              & VAR + PrecFact     & 0.555 (0.181) & 0.998 (0.004) & 0.762 (0.082) & 0.073 (0.012) \\
+              & Kastner (VAR+FSV)  & 0.543 (0.109) & 0.934 (0.020) & 1.178 (0.399) & 0.489 (0.076) \\
+              & VAPOR              & 0.550 (0.169) & 1.000 (0.002) & \textbf{0.689 (0.071)} & --- \\
+\midrule
+$\rho = 0.99$ & PrecFact (no VAR)  & 0.239 (0.116) & 0.845 (0.068) & 3.586 (0.741) & 2.898 (0.145) \\
+              & Glasso (no VAR)    & 0.009 (0.018) & 0.994 (0.014) & 2.197 (0.470) & 1.509 (0.091) \\
+              & VAR + Glasso       & 0.830 (0.146) & 0.530 (0.141) & 0.931 (0.112) & 0.243 (0.019) \\
+              & VAR + PrecFact     & 0.569 (0.184) & 0.999 (0.004) & 0.756 (0.080) & 0.067 (0.011) \\
+              & Kastner (VAR+FSV)  & 0.547 (0.097) & 0.934 (0.019) & 1.169 (0.389) & 0.481 (0.072) \\
+              & VAPOR              & 0.557 (0.158) & 1.000 (0.001) & \textbf{0.688 (0.068)} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-a-samplesize ----
+\begin{table}[h!]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Simulation A, Experiment B: varying sample size, $p=20$, $\rho(B)=0.95$, 25 replicates. $\Delta_F$ is the mean paired per-replicate difference in Frobenius distance against VAPOR, with positive values favoring VAPOR. The lowest Frobenius distance in each block is shown in bold.}
+\label{tab:sim-a-samplesize}
+\begin{tabular}{llcccc}
+\toprule
+Scenario & Method & Sensitivity & Specificity & Frobenius & $\Delta_F$ (SE) \\
+\midrule
+$T = 50$   & PrecFact (no VAR)  & 0.095 (0.080) & 0.950 (0.030) & 3.199 (0.624) & 1.547 (0.116) \\
+           & Glasso (no VAR)    & 0.022 (0.047) & 0.991 (0.019) & 2.196 (0.471) & 0.544 (0.036) \\
+           & VAR + Glasso       & 0.602 (0.214) & 0.716 (0.168) & 1.711 (0.359) & 0.059 (0.024) \\
+           & VAR + PrecFact     & 0.192 (0.137) & 0.994 (0.011) & 1.740 (0.305) & 0.088 (0.064) \\
+           & Kastner (VAR+FSV)  & 0.396 (0.101) & 0.913 (0.021) & 1.796 (0.444) & 0.144 (0.033) \\
+           & VAPOR              & 0.020 (0.039) & 1.000 (0.000) & \textbf{1.652 (0.357)} & --- \\
+\midrule
+$T = 100$  & PrecFact (no VAR)  & 0.170 (0.099) & 0.900 (0.043) & 3.249 (0.663) & 2.211 (0.130) \\
+           & Glasso (no VAR)    & 0.035 (0.071) & 0.984 (0.040) & 2.189 (0.473) & 1.151 (0.089) \\
+           & VAR + Glasso       & 0.741 (0.153) & 0.587 (0.151) & 1.321 (0.192) & 0.283 (0.030) \\
+           & VAR + PrecFact     & 0.424 (0.187) & 0.996 (0.006) & 1.143 (0.116) & 0.105 (0.021) \\
+           & Kastner (VAR+FSV)  & 0.484 (0.113) & 0.925 (0.021) & 1.386 (0.369) & 0.348 (0.067) \\
+           & VAPOR              & 0.372 (0.145) & 1.000 (0.001) & \textbf{1.038 (0.157)} & --- \\
+\midrule
+$T = 200$  & PrecFact (no VAR)  & 0.238 (0.111) & 0.864 (0.061) & 3.269 (0.656) & 2.580 (0.126) \\
+           & Glasso (no VAR)    & 0.053 (0.192) & 0.967 (0.139) & 2.193 (0.468) & 1.505 (0.091) \\
+           & VAR + Glasso       & 0.839 (0.144) & 0.525 (0.146) & 0.934 (0.114) & 0.246 (0.019) \\
+           & VAR + PrecFact     & 0.555 (0.181) & 0.998 (0.004) & 0.762 (0.082) & 0.073 (0.012) \\
+           & Kastner (VAR+FSV)  & 0.543 (0.109) & 0.934 (0.020) & 1.178 (0.399) & 0.489 (0.076) \\
+           & VAPOR              & 0.550 (0.169) & 1.000 (0.002) & \textbf{0.689 (0.071)} & --- \\
+\midrule
+$T = 500$  & PrecFact (no VAR)  & 0.339 (0.151) & 0.810 (0.076) & 3.357 (0.743) & 2.918 (0.150) \\
+           & Glasso (no VAR)    & 0.106 (0.267) & 0.931 (0.190) & 2.185 (0.463) & 1.746 (0.092) \\
+           & VAR + Glasso       & 0.915 (0.084) & 0.476 (0.123) & 0.606 (0.071) & 0.168 (0.010) \\
+           & VAR + PrecFact     & 0.697 (0.143) & 1.000 (0.000) & 0.472 (0.056) & 0.033 (0.006) \\
+           & Kastner (VAR+FSV)  & 0.613 (0.110) & 0.944 (0.019) & 1.050 (0.443) & 0.612 (0.089) \\
+           & VAPOR              & 0.691 (0.131) & 1.000 (0.000) & \textbf{0.439 (0.049)} & --- \\
+\midrule
+$T = 1000$ & PrecFact (no VAR)  & 0.384 (0.146) & 0.782 (0.071) & 3.327 (0.706) & 3.015 (0.141) \\
+           & Glasso (no VAR)    & 0.121 (0.296) & 0.923 (0.201) & 2.182 (0.461) & 1.870 (0.092) \\
+           & VAR + Glasso       & 0.952 (0.044) & 0.438 (0.086) & 0.453 (0.036) & 0.141 (0.007) \\
+           & VAR + PrecFact     & 0.738 (0.130) & 1.000 (0.002) & 0.335 (0.046) & 0.023 (0.004) \\
+           & Kastner (VAR+FSV)  & 0.650 (0.113) & 0.949 (0.019) & 0.999 (0.454) & 0.687 (0.090) \\
+           & VAPOR              & 0.736 (0.124) & 1.000 (0.001) & \textbf{0.312 (0.037)} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-a-paired-autocorr ----
+\begin{table}[h!]
+\centering
+\small
+\caption{Simulation A, Experiment A: paired per-replicate Frobenius differences against VAPOR across 25 replicates, $p=20$, $T=200$. $\Delta_F$ is the mean difference, with positive values favoring VAPOR; $t$ and $p$ are from a paired $t$-test on 24 degrees of freedom; Wins is the number of replicates in which VAPOR is closer to the true correlation matrix.}
+\label{tab:sim-a-paired-autocorr}
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Method & $\Delta_F$ & SE & $t$ & $p$ & Wins \\
+\midrule
+$\rho = 0.10$ & PrecFact (no VAR)  & 0.091 & 0.010 & 8.81 & $<10^{-4}$ & 23 / 25 \\
+              & Glasso (no VAR)    & 0.259 & 0.021 & 12.50 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.246 & 0.019 & 12.77 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.067 & 0.010 &  6.48 & $<10^{-4}$ & 22 / 25 \\
+              & Kastner (VAR+FSV)  & 0.435 & 0.076 &  5.74 & $<10^{-4}$ & 23 / 25 \\
+\midrule
+$\rho = 0.50$ & PrecFact (no VAR)  & 0.830 & 0.089 &  9.36 & $<10^{-4}$ & 25 / 25 \\
+              & Glasso (no VAR)    & 0.874 & 0.069 & 12.75 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.237 & 0.018 & 13.52 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.060 & 0.012 &  4.92 & $<10^{-4}$ & 20 / 25 \\
+              & Kastner (VAR+FSV)  & 0.504 & 0.072 &  7.02 & $<10^{-4}$ & 25 / 25 \\
+\midrule
+$\rho = 0.75$ & PrecFact (no VAR)  & 1.671 & 0.107 & 15.56 & $<10^{-4}$ & 25 / 25 \\
+              & Glasso (no VAR)    & 1.338 & 0.076 & 17.56 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.242 & 0.017 & 14.16 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.068 & 0.012 &  5.54 & $<10^{-4}$ & 18 / 25 \\
+              & Kastner (VAR+FSV)  & 0.504 & 0.077 &  6.51 & $<10^{-4}$ & 25 / 25 \\
+\midrule
+$\rho = 0.89$ & PrecFact (no VAR)  & 2.284 & 0.117 & 19.59 & $<10^{-4}$ & 25 / 25 \\
+              & Glasso (no VAR)    & 1.483 & 0.088 & 16.89 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.241 & 0.018 & 13.19 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.064 & 0.012 &  5.45 & $<10^{-4}$ & 20 / 25 \\
+              & Kastner (VAR+FSV)  & 0.449 & 0.075 &  5.96 & $<10^{-4}$ & 24 / 25 \\
+\midrule
+$\rho = 0.95$ & PrecFact (no VAR)  & 2.580 & 0.126 & 20.44 & $<10^{-4}$ & 25 / 25 \\
+              & Glasso (no VAR)    & 1.505 & 0.091 & 16.58 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.246 & 0.019 & 12.93 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.073 & 0.012 &  6.18 & $<10^{-4}$ & 21 / 25 \\
+              & Kastner (VAR+FSV)  & 0.489 & 0.076 &  6.47 & $<10^{-4}$ & 24 / 25 \\
+\midrule
+$\rho = 0.99$ & PrecFact (no VAR)  & 2.898 & 0.145 & 20.01 & $<10^{-4}$ & 25 / 25 \\
+              & Glasso (no VAR)    & 1.509 & 0.091 & 16.55 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + Glasso       & 0.243 & 0.019 & 12.54 & $<10^{-4}$ & 25 / 25 \\
+              & VAR + PrecFact     & 0.067 & 0.011 &  6.01 & $<10^{-4}$ & 19 / 25 \\
+              & Kastner (VAR+FSV)  & 0.481 & 0.072 &  6.65 & $<10^{-4}$ & 24 / 25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-a-paired-samplesize ----
+\begin{table}[h!]
+\centering
+\small
+\caption{Simulation A, Experiment B: paired per-replicate Frobenius differences against VAPOR across 25 replicates, $p=20$, $\rho(B)=0.95$. Columns as in Table~\ref{tab:sim-a-paired-autocorr}. The $T = 200$ block and the $\rho = 0.95$ block of Table~\ref{tab:sim-a-paired-autocorr} are the same scenario.}
+\label{tab:sim-a-paired-samplesize}
+\begin{tabular}{llccccc}
+\toprule
+Scenario & Method & $\Delta_F$ & SE & $t$ & $p$ & Wins \\
+\midrule
+$T = 50$   & PrecFact (no VAR)  & 1.547 & 0.116 & 13.29 & $<10^{-4}$ & 25 / 25 \\
+           & Glasso (no VAR)    & 0.544 & 0.036 & 14.96 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + Glasso       & 0.059 & 0.024 &  2.44 & 0.022      & 17 / 25 \\
+           & VAR + PrecFact     & 0.088 & 0.064 &  1.37 & 0.18      & 18 / 25 \\
+           & Kastner (VAR+FSV)  & 0.144 & 0.033 &  4.33 & 0.00023     & 21 / 25 \\
+\midrule
+$T = 100$  & PrecFact (no VAR)  & 2.211 & 0.130 & 17.02 & $<10^{-4}$ & 25 / 25 \\
+           & Glasso (no VAR)    & 1.151 & 0.089 & 13.00 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + Glasso       & 0.283 & 0.030 &  9.58 & $<10^{-4}$ & 23 / 25 \\
+           & VAR + PrecFact     & 0.105 & 0.021 &  5.06 & $<10^{-4}$ & 22 / 25 \\
+           & Kastner (VAR+FSV)  & 0.348 & 0.067 &  5.17 & $<10^{-4}$ & 22 / 25 \\
+\midrule
+$T = 200$  & PrecFact (no VAR)  & 2.580 & 0.126 & 20.44 & $<10^{-4}$ & 25 / 25 \\
+           & Glasso (no VAR)    & 1.505 & 0.091 & 16.58 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + Glasso       & 0.246 & 0.019 & 12.93 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + PrecFact     & 0.073 & 0.012 &  6.18 & $<10^{-4}$ & 21 / 25 \\
+           & Kastner (VAR+FSV)  & 0.489 & 0.076 &  6.47 & $<10^{-4}$ & 24 / 25 \\
+\midrule
+$T = 500$  & PrecFact (no VAR)  & 2.918 & 0.150 & 19.50 & $<10^{-4}$ & 25 / 25 \\
+           & Glasso (no VAR)    & 1.746 & 0.092 & 18.89 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + Glasso       & 0.168 & 0.010 & 16.49 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + PrecFact     & 0.033 & 0.006 &  5.82 & $<10^{-4}$ & 23 / 25 \\
+           & Kastner (VAR+FSV)  & 0.612 & 0.089 &  6.89 & $<10^{-4}$ & 24 / 25 \\
+\midrule
+$T = 1000$ & PrecFact (no VAR)  & 3.015 & 0.141 & 21.33 & $<10^{-4}$ & 25 / 25 \\
+           & Glasso (no VAR)    & 1.870 & 0.092 & 20.29 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + Glasso       & 0.141 & 0.007 & 20.23 & $<10^{-4}$ & 25 / 25 \\
+           & VAR + PrecFact     & 0.023 & 0.004 &  5.14 & $<10^{-4}$ & 22 / 25 \\
+           & Kastner (VAR+FSV)  & 0.687 & 0.090 &  7.62 & $<10^{-4}$ & 25 / 25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-b-autocorr ----
+\begin{table}[h!]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Simulation B, Experiment A: varying spectral radius, $p=20$, $T=200$, 25 replicates. $\Delta_F$ is the mean paired per-replicate difference in Frobenius distance against VAPOR, with positive values favoring VAPOR and negative values favoring the competitor. The lowest Frobenius distance in each block is shown in bold.}
+\label{tab:sim-b-autocorr}
+\begin{tabular}{llcccc}
+\toprule
+Scenario & Method & Sens & Spec & Frob & $\Delta_F$ (SE) \\
+\midrule
+$\rho = 0.10$ & PrecFact (no VAR)  & 0.633 (0.120) & 0.985 (0.010) & 1.069 (0.159) & $0.042$ (0.012) \\
+              & Glasso (no VAR)    & 0.994 (0.018) & 0.801 (0.060) & \textbf{0.633 (0.100)} & $-0.393$ (0.030) \\
+              & VAR + Glasso       & 0.994 (0.018) & 0.801 (0.056) & \textbf{0.633 (0.100)} & $-0.393$ (0.030) \\
+              & VAR + PrecFact     & 0.635 (0.129) & 0.985 (0.012) & 1.068 (0.179) & $0.042$ (0.009) \\
+              & Kastner (VAR+FSV)  & 0.766 (0.120) & 0.977 (0.015) & 0.894 (0.217) & $-0.133$ (0.021) \\
+              & VAPOR              & 0.613 (0.119) & 0.992 (0.008) & 1.027 (0.180) & --- \\
+\midrule
+$\rho = 0.50$ & PrecFact (no VAR)  & 0.454 (0.129) & 0.978 (0.016) & 1.337 (0.243) & $0.311$ (0.040) \\
+              & Glasso (no VAR)    & 0.930 (0.060) & 0.786 (0.063) & 1.025 (0.216) & $-0.002$ (0.042) \\
+              & VAR + Glasso       & 0.991 (0.022) & 0.796 (0.060) & \textbf{0.638 (0.102)} & $-0.388$ (0.029) \\
+              & VAR + PrecFact     & 0.636 (0.120) & 0.984 (0.012) & 1.082 (0.183) & $0.055$ (0.009) \\
+              & Kastner (VAR+FSV)  & 0.769 (0.100) & 0.977 (0.013) & 0.882 (0.213) & $-0.145$ (0.022) \\
+              & VAPOR              & 0.581 (0.141) & 0.991 (0.009) & 1.027 (0.176) & --- \\
+\midrule
+$\rho = 0.75$ & PrecFact (no VAR)  & 0.352 (0.129) & 0.949 (0.026) & 1.853 (0.337) & $0.832$ (0.063) \\
+              & Glasso (no VAR)    & 0.652 (0.328) & 0.851 (0.093) & 1.471 (0.244) & $0.450$ (0.047) \\
+              & VAR + Glasso       & 0.994 (0.018) & 0.806 (0.056) & \textbf{0.639 (0.099)} & $-0.382$ (0.029) \\
+              & VAR + PrecFact     & 0.649 (0.130) & 0.984 (0.012) & 1.090 (0.183) & $0.069$ (0.011) \\
+              & Kastner (VAR+FSV)  & 0.767 (0.093) & 0.977 (0.013) & 0.905 (0.191) & $-0.116$ (0.016) \\
+              & VAPOR              & 0.592 (0.139) & 0.992 (0.008) & 1.021 (0.168) & --- \\
+\midrule
+$\rho = 0.89$ & PrecFact (no VAR)  & 0.298 (0.126) & 0.925 (0.033) & 2.308 (0.443) & $1.268$ (0.086) \\
+              & Glasso (no VAR)    & 0.296 (0.359) & 0.931 (0.099) & 1.649 (0.188) & $0.609$ (0.030) \\
+              & VAR + Glasso       & 0.994 (0.018) & 0.805 (0.060) & \textbf{0.639 (0.099)} & $-0.402$ (0.032) \\
+              & VAR + PrecFact     & 0.652 (0.132) & 0.982 (0.012) & 1.082 (0.172) & $0.041$ (0.011) \\
+              & Kastner (VAR+FSV)  & 0.765 (0.114) & 0.977 (0.014) & 0.898 (0.219) & $-0.143$ (0.022) \\
+              & VAPOR              & 0.585 (0.126) & 0.991 (0.009) & 1.041 (0.183) & --- \\
+\midrule
+$\rho = 0.95$ & PrecFact (no VAR)  & 0.263 (0.132) & 0.909 (0.033) & 2.610 (0.520) & $1.581$ (0.099) \\
+              & Glasso (no VAR)    & 0.091 (0.246) & 0.982 (0.053) & 1.682 (0.168) & $0.653$ (0.024) \\
+              & VAR + Glasso       & 0.994 (0.018) & 0.803 (0.059) & \textbf{0.638 (0.099)} & $-0.392$ (0.029) \\
+              & VAR + PrecFact     & 0.630 (0.157) & 0.982 (0.015) & 1.085 (0.169) & $0.055$ (0.008) \\
+              & Kastner (VAR+FSV)  & 0.774 (0.110) & 0.977 (0.014) & 0.899 (0.229) & $-0.131$ (0.022) \\
+              & VAPOR              & 0.588 (0.111) & 0.992 (0.008) & 1.030 (0.172) & --- \\
+\midrule
+$\rho = 0.99$ & PrecFact (no VAR)  & 0.305 (0.120) & 0.877 (0.062) & 2.909 (0.679) & $1.872$ (0.137) \\
+              & Glasso (no VAR)    & 0.087 (0.246) & 0.983 (0.050) & 1.693 (0.153) & $0.656$ (0.023) \\
+              & VAR + Glasso       & 0.994 (0.018) & 0.802 (0.058) & \textbf{0.636 (0.100)} & $-0.400$ (0.027) \\
+              & VAR + PrecFact     & 0.629 (0.103) & 0.983 (0.012) & 1.088 (0.180) & $0.051$ (0.013) \\
+              & Kastner (VAR+FSV)  & 0.765 (0.103) & 0.977 (0.013) & 0.888 (0.210) & $-0.149$ (0.018) \\
+              & VAPOR              & 0.575 (0.150) & 0.992 (0.007) & 1.037 (0.163) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-b-samplesize ----
+\begin{table}[h!]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Simulation B, Experiment B: varying sample size, $p=20$, $\rho(B)=0.95$, 25 replicates. $\Delta_F$ is the mean paired per-replicate difference in Frobenius distance against VAPOR, with positive values favoring VAPOR and negative values favoring the competitor. The lowest Frobenius distance in each block is shown in bold, under oracle penalty tuning for the graphical lasso.}
+\label{tab:sim-b-samplesize}
+\begin{tabular}{llcccc}
+\toprule
+Scenario & Method & Sens & Spec & Frob & $\Delta_F$ (SE) \\
+\midrule
+$T = 50$   & PrecFact (no VAR)  & 0.082 (0.086) & 0.965 (0.030) & 2.534 (0.546) & $0.997$ (0.103) \\
+           & Glasso (no VAR)    & 0.094 (0.145) & 0.976 (0.040) & 1.685 (0.147) & $0.148$ (0.021) \\
+           & VAR + Glasso       & 0.767 (0.135) & 0.838 (0.045) & \textbf{1.284 (0.115)} & $-0.253$ (0.020) \\
+           & VAR + PrecFact     & 0.124 (0.101) & 0.994 (0.008) & 1.770 (0.216) & $0.232$ (0.039) \\
+           & Kastner (VAR+FSV)  & 0.419 (0.092) & 0.946 (0.014) & 1.572 (0.182) & $0.035$ (0.034) \\
+           & VAPOR              & 0.000 (0.000) & 1.000 (0.000) & 1.537 (0.107) & --- \\
+\midrule
+$T = 100$  & PrecFact (no VAR)  & 0.166 (0.085) & 0.929 (0.044) & 2.571 (0.525) & $1.281$ (0.105) \\
+           & Glasso (no VAR)    & 0.110 (0.247) & 0.971 (0.077) & 1.688 (0.146) & $0.398$ (0.025) \\
+           & VAR + Glasso       & 0.948 (0.052) & 0.804 (0.055) & \textbf{0.925 (0.135)} & $-0.366$ (0.028) \\
+           & VAR + PrecFact     & 0.313 (0.134) & 0.992 (0.014) & 1.362 (0.176) & $0.072$ (0.019) \\
+           & Kastner (VAR+FSV)  & 0.620 (0.089) & 0.964 (0.015) & 1.152 (0.183) & $-0.138$ (0.028) \\
+           & VAPOR              & 0.162 (0.106) & 0.998 (0.006) & 1.290 (0.156) & --- \\
+\midrule
+$T = 200$  & PrecFact (no VAR)  & 0.263 (0.132) & 0.909 (0.033) & 2.610 (0.520) & $1.581$ (0.099) \\
+           & Glasso (no VAR)    & 0.091 (0.246) & 0.982 (0.053) & 1.682 (0.168) & $0.653$ (0.024) \\
+           & VAR + Glasso       & 0.994 (0.018) & 0.803 (0.059) & \textbf{0.638 (0.099)} & $-0.392$ (0.029) \\
+           & VAR + PrecFact     & 0.630 (0.157) & 0.982 (0.015) & 1.085 (0.169) & $0.055$ (0.008) \\
+           & Kastner (VAR+FSV)  & 0.774 (0.110) & 0.977 (0.014) & 0.899 (0.229) & $-0.131$ (0.022) \\
+           & VAPOR              & 0.588 (0.111) & 0.992 (0.008) & 1.030 (0.172) & --- \\
+\midrule
+$T = 500$  & PrecFact (no VAR)  & 0.383 (0.146) & 0.857 (0.073) & 2.593 (0.587) & $1.681$ (0.123) \\
+           & Glasso (no VAR)    & 0.142 (0.310) & 0.975 (0.060) & 1.675 (0.170) & $0.762$ (0.031) \\
+           & VAR + Glasso       & 1.000 (0.000) & 0.801 (0.055) & \textbf{0.405 (0.039)} & $-0.508$ (0.031) \\
+           & VAR + PrecFact     & 0.746 (0.114) & 0.977 (0.011) & 0.940 (0.170) & $0.028$ (0.014) \\
+           & Kastner (VAR+FSV)  & 0.838 (0.096) & 0.983 (0.012) & 0.731 (0.227) & $-0.181$ (0.022) \\
+           & VAPOR              & 0.752 (0.106) & 0.981 (0.013) & 0.913 (0.177) & --- \\
+\midrule
+$T = 1000$ & PrecFact (no VAR)  & 0.450 (0.137) & 0.833 (0.072) & 2.623 (0.548) & $1.766$ (0.116) \\
+           & Glasso (no VAR)    & 0.149 (0.338) & 0.970 (0.069) & 1.682 (0.162) & $0.825$ (0.031) \\
+           & VAR + Glasso       & 1.000 (0.000) & 0.788 (0.055) & \textbf{0.291 (0.039)} & $-0.566$ (0.040) \\
+           & VAR + PrecFact     & 0.777 (0.097) & 0.972 (0.014) & 0.898 (0.207) & $0.041$ (0.019) \\
+           & Kastner (VAR+FSV)  & 0.839 (0.090) & 0.984 (0.012) & 0.687 (0.237) & $-0.170$ (0.023) \\
+           & VAPOR              & 0.789 (0.111) & 0.975 (0.015) & 0.857 (0.200) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-c ----
+\begin{table}[h!]
+\centering
+\small
+\caption{Simulation C: Kastner \& Huber DGP, held-out prediction MSPE (lower is better), $p=20$, $T=200$, 25 replicates. $\Delta_{\mathrm{MSPE}}$ is the mean paired per-replicate difference against VAPOR, with positive values favoring VAPOR and negative values favoring the competitor. The lowest MSPE in each block is shown in bold.}
+\label{tab:sim-c}
+\begin{tabular}{llcc}
+\toprule
+Scenario & Method & MSPE & $\Delta_{\mathrm{MSPE}}$ (SE) \\
+\midrule
+Sparse (1\%)        & PrecFact (no VAR)   & 0.9093 (0.1250) & $-0.0004$ (0.0037) \\
+                    & VAR + PrecFact      & 0.9041 (0.1295) & $-0.0055$ (0.0025) \\
+                    & VAPOR               & 0.9097 (0.1264) & --- \\
+                    & Kastner (VAR+FSV)   & \textbf{0.8520 (0.1492)} & $-0.0577$ (0.0104) \\
+                    & Sample covariance   & 0.9190 (0.1543) & $0.0093$ (0.0141) \\
+\midrule
+Intermediate (10\%) & PrecFact (no VAR)   & 0.9007 (0.1437) & $-0.0078$ (0.0031) \\
+                    & VAR + PrecFact      & 0.8992 (0.1325) & $-0.0094$ (0.0062) \\
+                    & VAPOR               & 0.9085 (0.1413) & --- \\
+                    & Kastner (VAR+FSV)   & \textbf{0.8403 (0.1283)} & $-0.0683$ (0.0171) \\
+                    & Sample covariance   & 0.8985 (0.1474) & $-0.0100$ (0.0212) \\
+\midrule
+Dense (80\%)        & PrecFact (no VAR)   & 0.7066 (0.2062) & $-0.1462$ (0.0330) \\
+                    & VAR + PrecFact      & 0.8531 (0.3504) & $0.0003$ (0.0071) \\
+                    & VAPOR               & 0.8527 (0.3393) & --- \\
+                    & Kastner (VAR+FSV)   & 0.7427 (0.3266) & $-0.1101$ (0.0176) \\
+                    & Sample covariance   & \textbf{0.4668 (0.1551)} & $-0.3859$ (0.0690) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-d ----
+\begin{table}[h!]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\caption{Simulation D: varying signal strength, $p=20$, $k=5$, $T=200$, $\rho(B)=0.95$, 25 replicates. The mean absolute nonzero partial correlation in $\Omega$ is 0.058, 0.166, 0.262, 0.394, and 0.498 across the five values of \texttt{val} in increasing order. $\Delta_F$ is the mean paired per-replicate difference in Frobenius distance against VAPOR, with positive values favoring VAPOR. The lowest Frobenius distance in each block is shown in bold.}
+\label{tab:sim-d}
+\begin{tabular}{llcccc}
+\toprule
+Scenario & Method & Sens & Spec & Frob & $\Delta_F$ (SE) \\
+\midrule
+\texttt{val} $= 0.5$ & PrecFact (no VAR)  & 0.123 (0.062) & 0.888 (0.048) & 2.651 (0.708) & $2.146$ (0.145) \\
+                     & Glasso (no VAR)    & 0.003 (0.011) & 0.999 (0.003) & 0.508 (0.127) & $0.002$ (0.015) \\
+                     & VAR + Glasso       & 0.154 (0.129) & 0.956 (0.038) & \textbf{0.471 (0.122)} & $-0.035$ (0.013) \\
+                     & VAR + PrecFact     & 0.010 (0.027) & 1.000 (0.002) & 0.512 (0.124) & $0.006$ (0.009) \\
+                     & Kastner (VAR+FSV)  & 0.270 (0.091) & 0.896 (0.016) & 0.569 (0.112) & $0.063$ (0.015) \\
+                     & VAPOR              & 0.015 (0.034) & 1.000 (0.000) & 0.506 (0.109) & --- \\
+\midrule
+\texttt{val} $= 1.0$ & PrecFact (no VAR)  & 0.166 (0.073) & 0.884 (0.053) & 2.873 (0.689) & $2.192$ (0.134) \\
+                     & Glasso (no VAR)    & 0.006 (0.015) & 0.997 (0.007) & 1.417 (0.327) & $0.736$ (0.061) \\
+                     & VAR + Glasso       & 0.653 (0.193) & 0.706 (0.119) & 0.818 (0.135) & $0.136$ (0.022) \\
+                     & VAR + PrecFact     & 0.329 (0.185) & 0.998 (0.004) & 0.763 (0.102) & $0.082$ (0.011) \\
+                     & Kastner (VAR+FSV)  & 0.461 (0.112) & 0.923 (0.020) & 0.888 (0.188) & $0.207$ (0.032) \\
+                     & VAPOR              & 0.351 (0.177) & 0.998 (0.003) & \textbf{0.681 (0.077)} & --- \\
+\midrule
+\texttt{val} $= 1.5$ & PrecFact (no VAR)  & 0.238 (0.111) & 0.864 (0.061) & 3.269 (0.656) & $2.580$ (0.126) \\
+                     & Glasso (no VAR)    & 0.053 (0.192) & 0.967 (0.139) & 2.193 (0.468) & $1.505$ (0.091) \\
+                     & VAR + Glasso       & 0.839 (0.144) & 0.525 (0.146) & 0.934 (0.114) & $0.246$ (0.019) \\
+                     & VAR + PrecFact     & 0.555 (0.181) & 0.998 (0.004) & 0.762 (0.082) & $0.073$ (0.012) \\
+                     & Kastner (VAR+FSV)  & 0.543 (0.109) & 0.934 (0.020) & 1.178 (0.399) & $0.489$ (0.076) \\
+                     & VAPOR              & 0.550 (0.169) & 1.000 (0.002) & \textbf{0.689 (0.071)} & --- \\
+\midrule
+\texttt{val} $= 2.5$ & PrecFact (no VAR)  & 0.333 (0.147) & 0.849 (0.049) & 3.882 (0.777) & $3.158$ (0.146) \\
+                     & Glasso (no VAR)    & 0.307 (0.404) & 0.779 (0.298) & 3.115 (0.569) & $2.391$ (0.104) \\
+                     & VAR + Glasso       & 0.942 (0.067) & 0.360 (0.105) & 0.968 (0.110) & $0.244$ (0.013) \\
+                     & VAR + PrecFact     & 0.751 (0.101) & 0.999 (0.002) & \textbf{0.702 (0.066)} & $-0.022$ (0.019) \\
+                     & Kastner (VAR+FSV)  & 0.599 (0.120) & 0.942 (0.021) & 1.830 (0.691) & $1.105$ (0.130) \\
+                     & VAPOR              & 0.718 (0.114) & 1.000 (0.001) & 0.724 (0.113) & --- \\
+\midrule
+\texttt{val} $= 4.0$ & PrecFact (no VAR)  & 0.400 (0.146) & 0.835 (0.060) & 4.387 (0.859) & $3.500$ (0.167) \\
+                     & Glasso (no VAR)    & 0.435 (0.439) & 0.673 (0.343) & 3.769 (0.621) & $2.882$ (0.117) \\
+                     & VAR + Glasso       & 0.965 (0.033) & 0.297 (0.045) & 0.970 (0.105) & $0.083$ (0.023) \\
+                     & VAR + PrecFact     & 0.829 (0.090) & 0.997 (0.006) & \textbf{0.680 (0.080)} & $-0.207$ (0.032) \\
+                     & Kastner (VAR+FSV)  & 0.620 (0.117) & 0.945 (0.020) & 2.453 (0.774) & $1.566$ (0.148) \\
+                     & VAPOR              & 0.778 (0.102) & 0.999 (0.002) & 0.887 (0.137) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-e ----
+\begin{table}[t]
+\centering
+\caption{Simulation E results, averaged over 25 replicates (standard deviations in parentheses). $\|\bar R-R_0\|_F$ is the Frobenius error of the correlation-scaled precision matrix; $\|\hat B-B_0\|_F/\|B_0\|_F$ is the relative coefficient error (VAPOR only); Sens and Spec are edge-recovery sensitivity and specificity at an oracle threshold retaining the true number of edges. The lowest Frobenius error in each block is shown in bold. Against VAPOR (DL), every paired difference to Kastner and the graphical lasso is positive and significant at $p<10^{-4}$, and the two VAPOR variants are statistically indistinguishable in every block but $(50,100)$. Full-rank VAPOR is omitted as it is not applicable at $T\le p$. The graphical lasso's Sens/Spec are omitted as degenerate (see text).}
+\label{tab:sim-e}
+\small
+\begin{tabular}{llcccc}
+\toprule
+$(p,T)$ & Method & $\|\bar R-R_0\|_F$ & $\|\hat B-B_0\|_F/\|B_0\|_F$ & Sens & Spec \\
+\midrule
+\multirow{4}{*}{$(50,50)$}
+  & VAPOR (DL)    & \textbf{3.95 (0.41)} & 0.70 (0.10) & 0.30 (0.08) & 0.95 (0.01)\\
+  & VAPOR (ridge) & 3.96 (0.40) & 1.09 (0.54) & 0.29 (0.07) & 0.95 (0.01)\\
+  & Kastner       & 4.60 (0.46) & --          & 0.13 (0.04) & 0.93 (0.01)\\
+  & Glasso        & 4.35 (0.46) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(50,75)$}
+  & VAPOR (DL)    & 3.25 (0.50) & 0.57 (0.15) & 0.43 (0.09) & 0.96 (0.01)\\
+  & VAPOR (ridge) & \textbf{3.24 (0.49)} & 0.58 (0.30) & 0.44 (0.10) & 0.96 (0.01)\\
+  & Kastner       & 4.49 (0.48) & --          & 0.14 (0.04) & 0.93 (0.01)\\
+  & Glasso        & 4.32 (0.47) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(50,100)$}
+  & VAPOR (DL)    & 2.69 (0.43) & 0.48 (0.15) & 0.55 (0.08) & 0.97 (0.01)\\
+  & VAPOR (ridge) & \textbf{2.63 (0.44)} & 0.44 (0.21) & 0.57 (0.08) & 0.97 (0.01)\\
+  & Kastner       & 4.48 (0.48) & --          & 0.15 (0.04) & 0.93 (0.01)\\
+  & Glasso        & 4.26 (0.46) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(100,100)$}
+  & VAPOR (DL)    & \textbf{6.85 (1.30)} & 0.64 (0.08) & 0.47 (0.09) & 0.95 (0.01)\\
+  & VAPOR (ridge) & 6.93 (1.22) & 0.94 (0.33) & 0.47 (0.08) & 0.95 (0.01)\\
+  & Kastner       & 9.60 (1.01) & --          & 0.11 (0.02) & 0.92 (0.01)\\
+  & Glasso        & 9.47 (1.00) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(150,150)$}
+  & VAPOR (DL)    & \textbf{8.10 (1.30)} & 0.57 (0.07) & 0.58 (0.06) & 0.96 (0.01)\\
+  & VAPOR (ridge) & 8.12 (1.37) & 0.78 (0.25) & 0.58 (0.06) & 0.96 (0.01)\\
+  & Kastner       & 14.57 (1.42)& --          & 0.09 (0.02) & 0.92 (0.01)\\
+  & Glasso        & 14.46 (1.41)& --          & --          & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---- tab:sim-f ----
+\begin{table}[h!]
+\centering
+\caption{Simulation F ($T<p$): fixed ratio $T/p=0.7$, varying dimension, 25 replicates (standard deviations in parentheses). $\|\bar R-R_0\|_F$ is the Frobenius error of the correlation-scaled precision matrix; $\|\hat B-B_0\|_F/\|B_0\|_F$ is the relative coefficient error (VAPOR only); Sens and Spec are edge-recovery sensitivity and specificity at an oracle threshold retaining the true number of edges. Full-rank VAPOR is omitted as it is not applicable at $T\le p$. The graphical lasso's Sens/Spec are omitted as degenerate (see text).}
+\label{tab:sim-f}
+\centering
+\small
+\begin{tabular}{llcccccc}
+\toprule
+$(p,T)$ & Method & $\|\bar R-R_0\|_F$ & $\|\hat B-B_0\|_F/\|B_0\|_F$ & Sens & Spec \\
+\midrule
+\multirow{4}{*}{$(50,35)$}
+  & VAPOR (DL)    & 4.36 (0.36) & 0.84 (0.08) & 0.20 (0.06) & 0.94 (0.01)\\
+  & VAPOR (ridge) & \textbf{4.32 (0.38)} & 0.90 (0.27) & 0.20 (0.06) & 0.94 (0.01)\\
+  & Kastner       & 4.75 (0.48) & --          & 0.12 (0.04) & 0.93 (0.01)\\
+  & Glasso        & 4.35 (0.46) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(100,70)$}
+  & VAPOR (DL)    & \textbf{8.95 (1.05)} & 0.79 (0.05) & 0.23 (0.04) & 0.93 (0.02)\\
+  & VAPOR (ridge) & 8.98 (1.06) & 0.79 (0.15) & 0.23 (0.05) & 0.93 (0.02)\\
+  & Kastner       & 9.63 (1.00) & --          & 0.09 (0.02) & 0.92 (0.01)\\
+  & Glasso        & 9.48 (1.01) & --          & --          & --\\
+\midrule
+\multirow{4}{*}{$(150,105)$}
+  & VAPOR (DL)    & \textbf{13.47 (1.55)} & 0.77 (0.05) & 0.24 (0.05) & 0.93 (0.01)\\
+  & VAPOR (ridge) & 13.56 (1.54) & 0.72 (0.11) & 0.23 (0.05) & 0.93 (0.01)\\
+  & Kastner       & 14.58 (1.44) & --          & 0.09 (0.01) & 0.92 (0.01)\\
+  & Glasso        & 14.48 (1.43) & --          & --          & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+

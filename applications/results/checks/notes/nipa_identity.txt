@@ -1,0 +1,42 @@
+p = 100 training panel, 100 rows (12/1/1996 .. 9/1/2020), transformed and standardized on the training window
+series: GDPC1, PCECC96, GPDIC1, GCEC1, EXPGSC1, IMPGSC1
+column means -5.05e-17 to 1.78e-17 | column SDs 1.0000 to 1.0000
+
+=== 2a. GDPC1 on the other five ===
+        term estimate std_error      t        p
+ (Intercept)   0.0000    0.0054   0.00 1.00e+00
+     PCECC96   0.7510    0.0099  76.01 3.35e-86
+      GPDIC1   0.4802    0.0098  49.18 7.09e-69
+       GCEC1   0.1140    0.0059  19.24 2.28e-34
+     EXPGSC1   0.2947    0.0111  26.66 1.30e-45
+     IMPGSC1  -0.3833    0.0152 -25.19 1.38e-43
+
+   n df_residual       R2   adj_R2 residual_SD residual_SD_as_share_of_GDPC1_SD F_stat
+ 100          94 0.997234 0.997087    0.053975                         0.053975 6777.6
+
+=== 2b. the 6 x 6 sample correlation matrix ===
+         GDPC1 PCECC96 GPDIC1  GCEC1 EXPGSC1 IMPGSC1
+GDPC1    1.000   0.938  0.828 -0.261   0.847   0.846
+PCECC96  0.938   1.000  0.655 -0.330   0.769   0.827
+GPDIC1   0.828   0.655  1.000 -0.358   0.725   0.829
+GCEC1   -0.261  -0.330 -0.358  1.000  -0.364  -0.396
+EXPGSC1  0.847   0.769  0.725 -0.364   1.000   0.866
+IMPGSC1  0.846   0.827  0.829 -0.396   0.866   1.000
+
+  all six eigenvalues:
+ index eigenvalue
+     1 4.42638000
+     2 0.84988300
+     3 0.35614600
+     4 0.23936600
+     5 0.12687300
+     6 0.00134867
+
+  smallest three:
+         rank eigenvalue
+     smallest 0.00134867
+ 2nd smallest 0.12687300
+ 3rd smallest 0.23936600
+
+  condition number (largest / smallest eigenvalue): 3282.04
+  kappa(C) by the 2-norm: 3282.04 | determinant: 5.4875e-05

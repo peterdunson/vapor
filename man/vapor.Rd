@@ -14,8 +14,10 @@ vapor(
   thin = 5,
   a_L = 0.5,
   b_L = 0.5,
-  a_B = 0.5,
+  a_B = 1/(ncol(Y) * ncol(Y) * lags),
   b_B = 0.5,
+  a_V = 1/(ncol(Y) * lags * rank),
+  b_V = 0.5,
   prior_B = c("dl", "ridge"),
   s_U2 = 1,
   s_V2 = 1,
@@ -49,9 +51,16 @@ B = U V^T, with `prior_B` controlling the prior on V.}
 
 \item{a_L, b_L}{Dirichlet-Laplace shape/rate for the precision loadings.}
 
-\item{a_B, b_B}{Dirichlet-Laplace shape/rate for the VAR coefficients
-(full B when rank = "full", or V when rank is numeric and
-prior_B = "dl").}
+\item{a_B, b_B}{Dirichlet-Laplace shape and fixed global rate for the
+full-rank VAR coefficient matrix B. Used only when rank = "full". The
+default \code{a_B = 1 / (ncol(Y) * ncol(Y) * lags)} is the reciprocal of the
+number of VAR coefficients, p * K_x with K_x = p * lags, as in the paper.}
+
+\item{a_V, b_V}{Dirichlet-Laplace shape and fixed global rate for the
+reduced-rank factor V. Used only when rank is numeric and
+prior_B = "dl". The default \code{a_V = 1 / (ncol(Y) * lags * rank)} is the
+reciprocal of the number of entries of V, K_x * r. Its default mentions
+\code{rank}, so it is evaluated only when \code{rank} is an integer.}
 
 \item{prior_B}{Prior on the reduced-rank factor V. Ignored when
 rank = "full" (always Dirichlet-Laplace on the full B). `"dl"`

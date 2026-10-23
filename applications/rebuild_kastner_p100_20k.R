@@ -17,11 +17,16 @@
 #  with 10,000 burn-in and thin 10 retains 1,000 draws per chain, matching the
 #  retained count of the other methods.
 #
-#  TWO OBJECTS, because the per-draw precisions are too large to keep inline:
-#     kastner_p100_20k.rds        config, attempts, chains (Omega + settings)
-#     kastner_p100_20k_draws.rds  the same chains plus pcor_mean_draws and a
-#                                 prec_draws_file per chain, written under
-#                                 results/fits/kastner_p100_prec_draws/
+#  TWO OBJECTS, matching the shipped pair:
+#     kastner_p100_20k.rds        config, attempts, chains (Omega + n_draws)
+#     kastner_p100_20k_draws.rds  the same chains plus pcor_mean_draws
+#
+#  The per-draw precisions are NOT kept.  The shipped objects name a
+#  `prec_draws_file` under results/fits/kastner_p100_prec_draws/, but that
+#  directory has never existed here and nothing reads it any more: the only
+#  consumer, pcor_mean_prec() in final_shared.R, takes pcor_mean_draws when a
+#  chain carries it, which these always do.  pcor_mean_draws is accumulated in
+#  one pass over the draws instead, so nothing of what is used is lost.
 #
 #  The windows and the series list come from final_p100.R's own CFG, so the
 #  panel is the one build_panel() gives the main fits.
@@ -48,11 +53,9 @@ if (SMOKE) { CFG$ITER <- 400L; CFG$BURN <- 200L; CFG$THIN <- 2L; CFG$NRUN <- 200
 
 #  SMOKE writes to its own names so a code-path check cannot overwrite the
 #  shipped objects the paper reports.
-TAG     <- if (SMOKE) "_SMOKE" else ""
-OUT_1   <- file.path(FITS_DIR, sprintf("kastner_p100_20k%s.rds", TAG))
-OUT_2   <- file.path(FITS_DIR, sprintf("kastner_p100_20k_draws%s.rds", TAG))
-DRAWDIR <- file.path(FITS_DIR, sprintf("kastner_p100_prec_draws%s", TAG))
-dir.create(DRAWDIR, recursive = TRUE, showWarnings = FALSE)
+TAG   <- if (SMOKE) "_SMOKE" else ""
+OUT_1 <- file.path(FITS_DIR, sprintf("kastner_p100_20k%s.rds", TAG))
+OUT_2 <- file.path(FITS_DIR, sprintf("kastner_p100_20k_draws%s.rds", TAG))
 cat(sprintf("K = %d | ITER = %d | BURN = %d | THIN = %d | retained/chain = %d\n",
             CFG$K, CFG$ITER, CFG$BURN, CFG$THIN, (CFG$ITER - CFG$BURN) / CFG$THIN))
 
@@ -75,13 +78,11 @@ one <- function(seed){
              prior_sigma = sp, quiet = TRUE)
    V <- vcov(m); nd <- dim(V)[4]
    acc <- matrix(0, p, p); pc <- matrix(0, p, p)
-   prec <- array(NA_real_, c(p, p, nd))
    for (i in seq_len(nd)){
-      Pi <- solve(V[1, , , i]); prec[, , i] <- Pi
+      Pi <- solve(V[1, , , i])
       acc <- acc + Pi; pc <- pc + pcor_from_omega(Pi) }
    dimnames(acc) <- dimnames(pc) <- list(vars, vars)
-   list(Omega = acc / nd, pcor_mean_draws = pc / nd, prec_draws = prec,
-        n_draws = nd,
+   list(Omega = acc / nd, pcor_mean_draws = pc / nd, n_draws = nd,
         settings = list(total_iterations = CFG$ITER, burnin = CFG$BURN,
                         thin = CFG$THIN,
                         draws_arg = as.integer(CFG$ITER - CFG$BURN),
@@ -100,12 +101,7 @@ for (s in CFG$SEEDS_ALL){
       attempts[[length(attempts) + 1L]] <-
          data.frame(seed = s, status = "error", minutes = el, error = z$msg)
       next }
-   #  stored as a BASENAME, not a path: final_shared.R's pcor_mean_prec()
-   #  resolves it under results/fits/kastner_p100_prec_draws/
-   bn <- sprintf("prec_draws_seed%d.rds", s)
-   saveRDS(z$prec_draws, file.path(DRAWDIR, bn))
-   z$prec_draws <- NULL; z$seed <- s; z$status <- "completed"; z$minutes <- el
-   z$prec_draws_file <- bn
+   z$seed <- s; z$status <- "completed"; z$minutes <- el
    chains[[length(chains) + 1L]] <- z
    attempts[[length(attempts) + 1L]] <-
       data.frame(seed = s, status = "completed", minutes = el, error = NA_character_)
@@ -127,10 +123,8 @@ saveRDS(list(config = cfg_store, attempts = AT,
                 q[c("seed","status","minutes","Omega","n_draws")]),
              run_at = now), OUT_1)
 saveRDS(list(config = cfg_store,
-             #  the stored layout, in order
              chains = lapply(chains, function(q)
-                q[c("seed","status","minutes","Omega","pcor_mean_draws",
-                    "n_draws","prec_draws_file")]),
-             mspe_compare = NULL, draw_dir = DRAWDIR, run_at = now), OUT_2)
-cat(sprintf("\nwrote %s\nwrote %s\ndraws in %s\n", OUT_1, OUT_2, DRAWDIR))
+                q[c("seed","status","minutes","Omega","pcor_mean_draws","n_draws")]),
+             mspe_compare = NULL, run_at = now), OUT_2)
+cat(sprintf("\nwrote %s\nwrote %s\n", OUT_1, OUT_2))
 print(AT, row.names = FALSE)
