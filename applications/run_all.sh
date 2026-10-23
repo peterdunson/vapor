@@ -110,12 +110,18 @@ simrun sim_f_combine    Rscript simulation/combine_sim_f.R
 simrun sim_tables       Rscript simulation/final_sim_tables.R
 simrun fig_sim_e_heatmap Rscript simulation/final_sim_e_heatmap.R
 
-#  5. the summaries last: they read every .rds above
+#  5. the summaries: they read every .rds above
 run summary          Rscript applications/final_summary.R
 simrun sim_sections     Rscript simulation/final_sim_sections.R
 
+#  6. last: the checks for numbers stated in the text of the paper.  This one
+#     refits four p = 29 chains at the OLD Gamma(0.1, 0.1) base measure, which
+#     is the only way to reproduce the claim about the idiosyncratic precisions
+#     staying near zero; the shipped default never reaches the bound.  ~5 min.
+run paper_checks     Rscript applications/paper_checks.R
+
 echo "=== done  $(date '+%Y-%m-%d %H:%M') ==="
-echo "application tables:  $RES/tables"
+echo "application tables:  $RES/tables  (incl. paper_checks.txt)"
 echo "application figures: $RES/figures"
 echo "simulation tables:   $SIMRES/tables"
 echo "simulation figures:  $SIMRES/figures"
