@@ -77,3 +77,101 @@ gaps in months: train 3 | test 3 | all consecutive quarters: TRUE
 
   --- as = bs = 1 ---
   as = bs = 1   seed 101: 0.79 min
+  as = bs = 1   seed 102: 0.80 min
+  as = bs = 1   seed 103: 0.80 min
+  as = bs = 1   seed 104: 0.79 min
+
+
+  ===== as = bs = 0.1 =====
+
+  per chain:
+ seed draws share_below_1e4 series_with_any max_longest_run floor_iters min_prec minutes
+  101  1000          0.1147              12             131        1128    1e-08    0.74
+  102  1000          0.0788              11             141         647    1e-08    0.75
+  103  1000          0.0850              13             152        1398    1e-08    0.75
+  104  1000          0.0572              11              93         639    1e-08    0.79
+
+  series with any draw below 1e-4, pooled over the four chains: 16 of 29
+    CMRMTSPLx, CPIAUCSL, FEDFUNDS, GDPC1, GS1, GS10, INDPRO, IPFINAL, M2REAL, OILPRICEx, PAYEMS, PCECC96, S.P.500, TB3MS, UNRATE, WPSFD49207
+
+  the 10 longest runs over all chains and series:
+ seed     series frac_below_1e4 longest_run min_prec
+  103   FEDFUNDS          0.240         152 1.00e-08
+  102  CMRMTSPLx          0.267         141 1.00e-08
+  103   CPIAUCSL          0.557         140 1.00e-08
+  101 WPSFD49207          0.316         131 1.00e-08
+  102     M2REAL          0.258         127 1.01e-08
+  103       GS10          0.287         125 1.00e-08
+  101     INDPRO          0.502         116 1.00e-08
+  101    IPFINAL          0.475         116 1.00e-08
+  103     INDPRO          0.260         100 1.00e-08
+  101   FEDFUNDS          0.334          99 1.00e-08
+
+  pooled share of the 4 x 1000 x 29 retained draws below 1e-4: 0.0839
+  longest run of consecutive draws below 1e-4, any series: 152
+
+  partial-correlation convergence, split on the flagged series
+  (R-hat and bulk ESS from the per-draw partial correlations, four chains):
+                       group n_pairs median_Rhat max_Rhat median_bulk_ESS min_bulk_ESS n_Rhat_gt_1.05
+     >=1 endpoint below 1e-4     328       1.005    1.235            1955           13             20
+ neither endpoint below 1e-4      78       1.002    1.087            3650           30              1
+
+  all 406 pairs together: median R-hat 1.004, max 1.235 | median bulk ESS 2489, min 13 | R-hat > 1.05: 21
+
+
+  ===== as = bs = 1 =====
+
+  per chain:
+ seed draws share_below_1e4 series_with_any max_longest_run floor_iters min_prec minutes
+  101  1000           0e+00               1               1           0 9.11e-05    0.79
+  102  1000           2e-04               3               3           0 9.31e-06    0.80
+  103  1000           0e+00               1               1           0 8.01e-05    0.80
+  104  1000           0e+00               0               0           0 1.99e-04    0.79
+
+  series with any draw below 1e-4, pooled over the four chains: 5 of 29
+    CMRMTSPLx, CPIAUCSL, GS10, INDPRO, TB3MS
+
+  the 10 longest runs over all chains and series:
+ seed    series frac_below_1e4 longest_run min_prec
+  102  CPIAUCSL          0.003           3 1.97e-05
+  102 CMRMTSPLx          0.002           2 4.57e-05
+  102     TB3MS          0.002           2 9.31e-06
+  101      GS10          0.001           1 9.11e-05
+  103    INDPRO          0.001           1 8.01e-05
+  101     GDPC1          0.000           0 3.72e-04
+  101    INDPRO          0.000           0 2.96e-04
+  101   IPFINAL          0.000           0 2.64e-04
+  101   IPCONGD          0.000           0 1.99e+00
+  101   IPBUSEQ          0.000           0 2.14e+00
+
+  pooled share of the 4 x 1000 x 29 retained draws below 1e-4: 0.0001
+  longest run of consecutive draws below 1e-4, any series: 3
+
+  partial-correlation convergence, split on the flagged series
+  (R-hat and bulk ESS from the per-draw partial correlations, four chains):
+                       group n_pairs median_Rhat max_Rhat median_bulk_ESS min_bulk_ESS n_Rhat_gt_1.05
+     >=1 endpoint below 1e-4     130       1.000    1.031            3708          132              0
+ neither endpoint below 1e-4     276       1.001    1.028            3655          151              0
+
+  all 406 pairs together: median R-hat 1.001, max 1.031 | median bulk ESS 3684, min 132 | R-hat > 1.05: 0
+
+
+  ===== both runs, split on the SAME series set =====
+  grouping fixed to the 16 series flagged under Gamma(0.1, 0.1)
+
+       setting                       group n_pairs median_Rhat max_Rhat median_bulk_ESS min_bulk_ESS n_Rhat_gt_1.05
+ as = bs = 0.1     >=1 endpoint below 1e-4     328       1.005    1.235            1955           13             20
+ as = bs = 0.1 neither endpoint below 1e-4      78       1.002    1.087            3650           30              1
+   as = bs = 1     >=1 endpoint below 1e-4     328       1.001    1.031            3673          132              0
+   as = bs = 1 neither endpoint below 1e-4      78       1.001    1.007            3708          966              0
+
+
+=== the quoted statements and what this script reproduces ===
+
+                           statement        quoted                                        computed
+      a third of its mass below 1e-4  1/3 = 0.3333                                          0.3324
+                         R^2 = 0.997         0.997                                        0.997234
+          smallest eigenvalue 0.0013        0.0013                                        0.001349
+ stayed near zero for long stretches (qualitative) longest run 152 draws, 8.4% of draws below 1e-4
+
+wrote /Users/peterdunson/Desktop/vapor/applications/results/tables/paper_checks.txt
