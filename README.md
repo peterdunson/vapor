@@ -282,6 +282,7 @@ At p = 29 the rebuild reproduces the stored object exactly.
 | `applications/results/figures/` | the eight application figures |
 | `applications/results/tables/` | `varlist_p100.tex`, `results_summary.md` |
 | `applications/results/tables/paper_checks.txt` | checks for numbers stated in the text |
+| `applications/results/tables/ppc_comparison_p29.rds` and `_p100.rds` | posterior predictive check for the competing models |
 | `simulation/results/figures/` | `sim_a_heatmap_rho95_T100.png`, `sim_e_heatmap_p150_T150.png` |
 | `simulation/results/tables/` | `sim_tables.tex` |
 | `*/results/fits/`, `*/results/logs/` | per-stage `.rds` and logs |

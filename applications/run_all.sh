@@ -99,6 +99,16 @@ run fig_network_p100 Rscript applications/network_p100_grouped.R
 run fig_term_p100    Rscript applications/term_structure_p100.R
 run fig_trace_p100   Rscript applications/final_trace_p100.R
 
+#  3b. the posterior predictive check for the competing models.  Reads the
+#      p<d>_results.rds / p<d>_tables.rds that stage 1 wrote and the reused
+#      competitor fits.  Kastner needs B draws and a time-varying Sigma_t,
+#      which no stored fit holds, so the script loads results/fits/
+#      kastner_ppc_p<d>.rds when it is there and otherwise refits four chains
+#      with sv_keep = "all" and caches them.  A cold p = 100 refit is ~80 min;
+#      with the cache both dimensions take about two minutes.
+run ppc_p29          Rscript applications/ppc_comparison.R 29
+run ppc_p100         Rscript applications/ppc_comparison.R 100
+
 #  4. the simulations.  sim_a--sim_e run in the driver's own child
 #     processes; sim_f's three (p, T) settings are separate processes, combined
 #     afterwards, because each is long enough to be worth running apart.
