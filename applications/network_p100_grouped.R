@@ -116,23 +116,67 @@ unit_layout <- function(v){
    xy <- if (m == 2) cbind(c(0, 0), c(0.25, -0.25))
          else if (m == 3){ h <- sep2(v[1], v[2]); cbind(c(-h, h, 0.00), c(-0.17, -0.17, 0.30)) }
          else { th <- seq(0, 2*pi, length.out = m+1)[-(m+1)] + pi/2
-                r <- max(0.42, (max(lw[v]) + 0.09)/1.5)
+                #  neighbours on the circle are 2 r sin(pi/m) apart, so the
+                #  radius has to grow with the label width or two labels on
+                #  the same side run into each other
+                r <- max(0.42, (max(lw[v]) + 0.10) / (2.6 * sin(pi/m)))
                 cbind(r*cos(th), r*sin(th)) }
    rownames(xy) <- v
    #  a label goes BELOW its node unless the node has a neighbour below it, in
    #  which case it goes above.  Vertical placement keeps components narrow,
    #  which is what lets the figure fit the text width.
-   dr <- if (m == 2) rbind(c(1, 0), c(1, 0)) else
-      t(vapply(v, function(u){
+   #  On a ring (m >= 4) the label goes RADIALLY outward, away from the
+   #  component's centre, which is what keeps labels off the interior and off
+   #  each other.  Pushing every label straight up or down instead stacked
+   #  the two left-hand rate labels on top of one another.
+   dr <- if (m == 2) rbind(c(1, 0), c(1, 0))
+      else if (m >= 4) t(apply(xy, 1, function(q){
+         n <- sqrt(sum(q^2)); if (n < 1e-9) c(0, -1) else q/n }))
+      else t(vapply(v, function(u){
          nb <- intersect(unique(c(em[em[,1]==u,2], em[em[,2]==u,1])), v)
          below <- length(nb) && any(xy[nb,2] < xy[u,2] - 1e-9)
          if (below) c(0, 1) else c(0, -1) }, numeric(2)))
    rownames(dr) <- v
    list(xy = xy, dir = dr) }
 
+#  ---------------------------------------------------------------------------
+#  Node labels: a short readable name instead of the FRED-QD mnemonic.  Each is
+#  a shortening of that series' description in varlist_descriptions.csv, kept
+#  to about 20 characters so the layout, which is driven by label widths, still
+#  resolves.  The graph's vertex names stay the mnemonics.
+#  ---------------------------------------------------------------------------
+SHORT <- c(
+  AAA = "Aaa corp. bond",            AMDMNOx = "Orders, durables",
+  ANDENOx = "Orders, capital gds",   BAA = "Baa corp. bond",
+  CPIAUCSL = "CPI, all items",       CPITRNSL = "CPI, transport",
+  CUMFNS = "Capacity util., mfg",    DMANEMP = "Emp., durable mfg",
+  FEDFUNDS = "Fed funds",            GS1 = "1-yr Treasury",
+  GS10 = "10-yr Treasury",           GS5 = "5-yr Treasury",
+  HOUST = "Housing starts",          HOUSTS = "Housing starts, S.",
+  HOUSTW = "Housing starts, W.",     INDPRO = "Industrial prod.",
+  IPBUSEQ = "IP, business eq.",      IPCONGD = "IP, consumer gds",
+  IPFINAL = "IP, final products",    IPMAT = "IP, materials",
+  M1REAL = "Real M1",                M2REAL = "Real M2",
+  MANEMP = "Emp., manufacturing",    MORTGAGE30US = "30-yr mortgage",
+  PCDGx = "PCE, durables",           PCECC96 = "PCE, total",
+  PCECTPI = "PCE price index",       PCESVx = "PCE, services",
+  PPIACO = "PPI, all commod.",       TB3MS = "3-mo T-bill",
+  TCU = "Capacity util., total",     UEMP27OV = "Unemp. 27+ weeks",
+  UNRATE = "Unemployment rate",      UNRATELTx = "Unemp. rate, 15+ wk",
+  UNRATESTx = "Short-term unemp.",   USCONS = "Emp., construction",
+  USGOOD = "Emp., goods-prod.",      USLAH = "Emp., leisure/hosp.",
+  USPRIV = "Emp., total private",    WPSID61 = "PPI, intermediate")
+miss2 <- setdiff(NODES, names(SHORT))
+if (length(miss2)) stop(sprintf("no short label for: %s", paste(miss2, collapse = ", ")))
+DISP <- SHORT[NODES]
+cat(sprintf("node labels: %d, longest %d characters (%s)\n", length(DISP),
+            max(nchar(DISP)), names(which.max(nchar(DISP)))))
+print(data.frame(mnemonic = NODES, label = unname(DISP),
+                 nchar = nchar(DISP), row.names = NULL))
+
 png(OUT, width = W_IN, height = 7.4, units = "in", res = 600, bg = "white")
 plot.new()                                   # so strwidth() is available
-lw <- setNames(strwidth(NODES, cex = LCEX, units = "inches"), NODES)
+lw <- setNames(strwidth(DISP, cex = LCEX, units = "inches"), NODES)
 lh <- strheight("X", cex = LCEX, units = "inches")
 
 #  per-component geometry, in inches, centred on (0,0)
@@ -331,7 +375,7 @@ for (i in seq_len(nrow(em))) if (!is.na(VPOS[i,1])){
 for (v in rownames(NP))
    circle(NP[v,1], NP[v,2], R_NODE, unname(pal[sect[v]]))
 for (v in rownames(LP))
-   text(LP[v,1], LP[v,2], v, cex = LCEX, col = "grey10",
+   text(LP[v,1], LP[v,2], DISP[v], cex = LCEX, col = "grey10",
         adj = c(ADJ[v,1], ADJ[v,2]))
 
 par(mar = c(0.05, 0.2, 0.05, 0.2))
