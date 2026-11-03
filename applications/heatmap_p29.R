@@ -208,7 +208,16 @@ cat(sprintf("wrote %s (%d panels, %d labelled edges)\n", OUT, NP, nrow(up)))
 #  caption key, LaTeX-ready
 ed_ord <- fit$long$ci_edges
 #  inside $...$ a leading "-" already typesets as a minus sign
+#  the key names series by their short readable label, from the one shared
+#  file, so the caption carries no FRED-QD mnemonic either
+KEY_SHORT <- local({
+   d <- read.csv("/Users/peterdunson/Desktop/vapor/applications/series_labels.csv",
+                 stringsAsFactors = FALSE)
+   setNames(d$short_label, d$mnemonic) })
+stopifnot(all(c(ed_ord$v1, ed_ord$v2) %in% names(KEY_SHORT)))
+tex <- function(x) gsub("&", "\\\\&", x)      # the only LaTeX special in the labels
 KEYTXT <- paste(sprintf("%d %s--%s ($%.2f$)", seq_len(nrow(ed_ord)),
-                        ed_ord$v1, ed_ord$v2, ed_ord$pcor), collapse = ", ")
+                        tex(KEY_SHORT[ed_ord$v1]), tex(KEY_SHORT[ed_ord$v2]),
+                        ed_ord$pcor), collapse = ", ")
 cat("\n--- caption key, LaTeX-ready ---\n")
 cat(KEYTXT, "\n")

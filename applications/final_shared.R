@@ -28,6 +28,19 @@ suppressMessages({
 #  under applications/results/.  Nothing is written to the precision_factor
 #  tree any more; the raw FRED-QD csv is the only thing read from outside.
 # ============================================================================
+#  Short readable names for the series, so no figure prints a FRED-QD
+#  mnemonic.  One file, read by every figure script.
+SERIES_LABELS_CSV <- "/Users/peterdunson/Desktop/vapor/applications/series_labels.csv"
+series_labels <- function(csv = SERIES_LABELS_CSV){
+   d <- utils::read.csv(csv, stringsAsFactors = FALSE)
+   setNames(d$short_label, d$mnemonic) }
+#  label a vector of mnemonics; anything unknown is a hard error, so a new
+#  series cannot slip into a figure as a mnemonic
+slab <- function(x, L = series_labels()){
+   miss <- setdiff(x, names(L))
+   if (length(miss)) stop(sprintf("no short_label for: %s", paste(miss, collapse = ", ")))
+   unname(L[x]) }
+
 RES_DIR  <- "/Users/peterdunson/Desktop/vapor/applications/results"
 FIG_DIR  <- file.path(RES_DIR, "figures")
 TAB_DIR  <- file.path(RES_DIR, "tables")
@@ -687,7 +700,8 @@ fig_trace <- function(chains, edges, vars, p, out, n_edge = 6){
                   i <- match(top$v1[e], vars); j <- match(top$v2[e], vars)
                   lapply(chains, function(f) vapply(seq_len(dim(f$Lambda)[3]),
                      function(s) pcor_from_omega(omega_one(f,s))[i,j], numeric(1))) }),
-                  paste(top$v1, top$v2, sep = " - ")))
+                  #  readable names, not mnemonics
+                  paste(slab(top$v1), slab(top$v2), sep = " - ")))
    np <- length(series)
    png(out, width = 12, height = 2.05*np + 1.1, units = "in", res = 200, bg = "white")
    on.exit(dev.off())

@@ -13,7 +13,14 @@ fit <- readRDS(file.path(APP, "p100_results.rds"))
 OUT <- file.path(FIG_DIR, "termstructure_p100.png")
 
 RATES <- c("FEDFUNDS","TB3MS","GS1","GS5","GS10","MORTGAGE30US")
-SHOW  <- RATES                                  # full names on both panels
+#  short readable names, read from the one shared file so every paper figure
+#  uses the same wording and no FRED-QD mnemonic is ever plotted
+SHORT <- local({
+   d <- read.csv("/Users/peterdunson/Desktop/vapor/applications/series_labels.csv",
+                 stringsAsFactors = FALSE)
+   setNames(d$short_label, d$mnemonic) })
+stopifnot(all(RATES %in% names(SHORT)))
+SHOW  <- unname(SHORT[RATES])                   # readable names on both panels
 
 # -- rebuild the training panel ---------------------------------------------
 raw <- read.csv("/Users/peterdunson/Desktop/vapor/applications/data/2026-05-qd.csv")
@@ -86,7 +93,7 @@ selected <- function(a, b) paste(min(a,b), max(a,b), sep = "--") %in% ekey
 pcor_of  <- function(a, b) pcm[a, b]
 
 CHAIN <- c("FEDFUNDS","TB3MS","GS1","GS5","GS10")
-LABS  <- CHAIN
+LABS  <- unname(SHORT[CHAIN])
 
 png(OUT, width = 13.5, height = 6.0, units = "in", res = 300, bg = "white")
 layout(matrix(1:2, nrow = 1), widths = c(1, 1.15))
@@ -135,7 +142,7 @@ if (selected("GS5", "MORTGAGE30US")){
    text(4.35, -0.20, sprintf("%.2f", pcor_of("GS5","MORTGAGE30US")),
         cex = 1.25, font = 2, col = "grey10")
    points(4, -0.95, pch = 21, bg = NODE_BG, col = "grey25", cex = NODE_CEX, lwd = 1.6)
-   text(4, -0.95 - LAB_DROP, "MORTGAGE30US", cex = 1.02) }
+   text(4, -0.95 - LAB_DROP, unname(SHORT["MORTGAGE30US"]), cex = 1.02) }
 
 points(xs, ys, pch = 21, bg = NODE_BG, col = "grey25", cex = NODE_CEX, lwd = 1.6)
 #  GS5 carries both the dashed GS1-GS5 link and the branch down to

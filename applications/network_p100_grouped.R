@@ -145,27 +145,10 @@ unit_layout <- function(v){
 #  to about 20 characters so the layout, which is driven by label widths, still
 #  resolves.  The graph's vertex names stay the mnemonics.
 #  ---------------------------------------------------------------------------
-SHORT <- c(
-  AAA = "Aaa corp. bond",            AMDMNOx = "Orders, durables",
-  ANDENOx = "Orders, capital gds",   BAA = "Baa corp. bond",
-  CPIAUCSL = "CPI, all items",       CPITRNSL = "CPI, transport",
-  CUMFNS = "Capacity util., mfg",    DMANEMP = "Emp., durable mfg",
-  FEDFUNDS = "Fed funds",            GS1 = "1-yr Treasury",
-  GS10 = "10-yr Treasury",           GS5 = "5-yr Treasury",
-  HOUST = "Housing starts",          HOUSTS = "Housing starts, S.",
-  HOUSTW = "Housing starts, W.",     INDPRO = "Industrial prod.",
-  IPBUSEQ = "IP, business eq.",      IPCONGD = "IP, consumer gds",
-  IPFINAL = "IP, final products",    IPMAT = "IP, materials",
-  M1REAL = "Real M1",                M2REAL = "Real M2",
-  MANEMP = "Emp., manufacturing",    MORTGAGE30US = "30-yr mortgage",
-  PCDGx = "PCE, durables",           PCECC96 = "PCE, total",
-  PCECTPI = "PCE price index",       PCESVx = "PCE, services",
-  PPIACO = "PPI, all commod.",       TB3MS = "3-mo T-bill",
-  TCU = "Capacity util., total",     UEMP27OV = "Unemp. 27+ weeks",
-  UNRATE = "Unemployment rate",      UNRATELTx = "Unemp. rate, 15+ wk",
-  UNRATESTx = "Short-term unemp.",   USCONS = "Emp., construction",
-  USGOOD = "Emp., goods-prod.",      USLAH = "Emp., leisure/hosp.",
-  USPRIV = "Emp., total private",    WPSID61 = "PPI, intermediate")
+SHORT <- local({
+  d <- read.csv("/Users/peterdunson/Desktop/vapor/applications/series_labels.csv",
+                stringsAsFactors = FALSE)
+  setNames(d$short_label, d$mnemonic) })
 miss2 <- setdiff(NODES, names(SHORT))
 if (length(miss2)) stop(sprintf("no short label for: %s", paste(miss2, collapse = ", ")))
 DISP <- SHORT[NODES]
