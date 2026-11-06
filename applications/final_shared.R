@@ -749,21 +749,22 @@ fig_ppc <- function(ppc, chains, Y, p, out, n_rep, seed, BIG = 1e3){
    OBS <- colMeans(do.call(rbind, lapply(z$detail, function(d) d$obs)))
    png(out, width = 12, height = 9.6, units = "in", res = 200, bg = "white")
    on.exit(dev.off())
+   #  no outer title: the caption carries the description, so the strip the
+   #  title used to occupy is given back to the panels
    par(mfrow = c(3,3), mar = c(3.6, 3.8, 3.0, 1.0), mgp = c(2.3, 0.7, 0),
-       oma = c(0, 0, 2.2, 0))
+       oma = c(0, 0, 0, 0))
    for (k in seq_along(OBS)){
       st <- names(OBS)[k]
       nm <- if (st %in% names(PPC_NAMES)) PPC_NAMES[[st]] else st
       h <- hist(REP[,k], breaks = 24, plot = FALSE)
       plot(h, col = "grey88", border = "grey65",
-           main = sprintf("%s (p = %.2f)", nm, z$table$ppp[k]),
+           #  the heading names the statistic only; the posterior predictive
+           #  p-values are reported in the PPC table, not on the panels
+           main = nm,
            cex.main = 1.25, font.main = 1,
            xlab = "replicated value", ylab = "frequency",
            xlim = range(c(h$breaks, OBS[k])))
       abline(v = OBS[k], col = "#c0392b", lwd = 2.6) }
-   mtext(sprintf("Posterior predictive check, one step ahead, p = %d (%d draws; red rule = observed)",
-                 p, attr(z$table, "n_draws")),
-         outer = TRUE, line = 0.4, cex = 1.15)
    invisible(out) }
 
 # ============================================================================
